@@ -1,0 +1,50 @@
+<application>
+  <component name="VimSettings">
+    <state version="4" enabled="false" />
+    <globalmarks />
+    <filemarks>
+      <file name="$USER_HOME$/IdeaProjects/antlrtest/src/hello.g4" timestamp="1488538474727">
+        <mark key="[" line="0" column="0" />
+      </file>
+      <file name="$USER_HOME$/IdeaProjects/antlrtest/src/Hello.g4" timestamp="1488539051339">
+        <mark key="[" line="4" column="66" />
+        <mark key="]" line="6" column="0" />
+        <mark key="^" line="6" column="0" />
+        <mark key="." line="6" column="0" />
+      </file>
+      <file name="/fragment.java" timestamp="1488539094200">
+        <mark key="[" line="0" column="0" />
+      </file>
+    </filemarks>
+    <jumps />
+    <registers>
+      <register name="1" type="2">
+        <text encoding="base64">ciAgIDogJ2hlbGxvJyBJRDsgICAgICAgICAgICAgICAgICAgLy8gbWF0Y2gga2V5d29yZCBoZWxsbyBmb2xsb3dlZCBieSBhbiBpZGVudGlmaWVyCg==</text>
+      </register>
+      <register name="&quot;" type="2">
+        <text encoding="base64">ciAgIDogJ2hlbGxvJyBJRDsgICAgICAgICAgICAgICAgICAgLy8gbWF0Y2gga2V5d29yZCBoZWxsbyBmb2xsb3dlZCBieSBhbiBpZGVudGlmaWVyCg==</text>
+      </register>
+      <register name=":" type="4">
+        <text>w</text>
+      </register>
+    </registers>
+    <search>
+      <last-dir>0</last-dir>
+      <show-last>false</show-last>
+    </search>
+    <history>
+      <history-search />
+      <history-cmd>
+        <entry>s</entry>
+        <entry>w</entry>
+      </history-cmd>
+      <history-expr />
+      <history-input />
+    </history>
+    <shortcut-conflicts>
+      <shortcut-conflict owner="vim">
+        <text>ctrl pressed S</text>
+      </shortcut-conflict>
+    </shortcut-conflicts>
+  </component>
+</application>
