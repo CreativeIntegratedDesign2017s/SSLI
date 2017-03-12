@@ -1,8 +1,7 @@
-.*
-
 # Project Config
+.idea
 out
+gen
 
 # Must Include
 !.gitignore
-gen/
