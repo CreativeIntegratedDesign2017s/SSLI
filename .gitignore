@@ -1,9 +1,8 @@
 .*
 
 # Project Config
-*.iml
 out
-src
 
 # Must Include
 !.gitignore
+gen/
