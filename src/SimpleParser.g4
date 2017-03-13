@@ -2,7 +2,7 @@ parser grammar SimpleParser;
 
 options { tokenVocab=SimpleLexer; }
 
-prgm:	EOF									# Epsilon
+prgm:	EOF									# End
     |	stmt prgm							# Statement
     |	ENUM ID '{' ID (CM ID)* '}' prgm	# EnumDef
     |	TYPE ID '{' (ID ID SC)+ '}' prgm	# TypeDef
@@ -28,9 +28,9 @@ expr:	ID									# Variable
     |	INT									# Integer
     |	STR									# String
     |	'{' expr (CM expr)* '}'				# Compound
-    |	ID '.' ID							# TypeCall
+    |	ID '.' ID							# Member
     |	ID '(' subst ')'					# ProcCall
-    |	ID '[' expr (CL expr)* ']'			# Substr
+    |	ID '[' expr (CL expr)? ']'			# Substr
     |	op=('+'|'-') expr					# SignBit
     |	<assoc=right> expr '^' expr			# Pow
     |	expr op=('*'|'/') expr				# MulDiv
