@@ -2,7 +2,7 @@ parser grammar SimpleParser;
 
 options { tokenVocab=SimpleLexer; }
 
-prgm:	EOF									# End
+prgm:	EOF									# EndPrgm
     |	stmt prgm							# Statement
     |	ENUM ID '{' ID (CM ID)* '}' prgm	# EnumDef
     |	TYPE ID '{' (ID ID SC)+ '}' prgm	# TypeDef
