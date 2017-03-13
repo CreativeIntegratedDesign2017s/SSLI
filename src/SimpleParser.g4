@@ -4,6 +4,7 @@ options { tokenVocab=SimpleLexer; }
 
 prgm:	EOF									# Epsilon
     |	stmt prgm							# Statement
+    |	ENUM ID '{' ID (CM ID)* '}' prgm	# EnumDef
     |	TYPE ID '{' (ID ID SC)+ '}' prgm	# TypeDef
     |	PROC ID '(' param ')' stmt prgm		# ProcDef
     |	IMPORT STR SC prgm					# Import

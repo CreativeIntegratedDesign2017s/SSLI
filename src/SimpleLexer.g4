@@ -34,6 +34,7 @@ WHILE:	'while' ;
 PRINT:	'print' ;
 RETURN:	'return' ;
 IMPORT:	'import' ;
+ENUM:	'enum' ;
 TYPE:	'type' ;
 PROC:	'proc' ;
 VOID:   'void' ;
