@@ -19,7 +19,7 @@
 * [File] - [Project Structure] - [Libraries], '[프로젝트 경로]/lib/antlr-4.x-complete.jar'를 추가한다.
 * 빌드를 해보자. Edit Configuration을 통해 다른 빌드 옵션을 만들 수도 있다.
 * (추가 빌드 옵션) Main class: org.antlr.v4.gui.TestRig
-* (추가 빌드 옵션) Simple prgm -gui test/TestLanguage.ssli
+* (추가 빌드 옵션) Program arguments : Simple prgm -gui test/TestLanguage.ssli
 * (추가 빌드 옵션) Working directory: [프로젝트 경로]
 * (추가 빌드 옵션) 위와 같이 하면 Test Case에 대한 Parse Tree를 GUI로 볼 수 있다.
 
