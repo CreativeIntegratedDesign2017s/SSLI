@@ -42,6 +42,6 @@ VOID:   'void' ;
 /* Default Mode */
 BOOL:	'true' | 'false' ;
 INT :	[0-9]+ ;
-STR :	'"' ~(["\r\n])* '"' ;
+STR :	'"' ('\\"' | '\\\\' | ~('\\' | '\r' | '\n'))*? '"' ;
 ID  :	[a-zA-Z] ([a-zA-Z0-9])* ;
 WS  :	[ \t\r\n]+ -> skip ;
