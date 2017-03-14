@@ -14,13 +14,14 @@ stmt:	SC									# Blank
     |	expr SC								# Evaluate
     |	PRINT expr SC						# Print
     |	RETURN expr SC						# Return
-    |	'{' stmt+ '}'						# Nested
     |	ID ID SC							# Define
     |	ID ':=' expr SC						# Assign
     |	ID ID ':=' expr SC					# Initiate
-    |	IF '(' expr ')' THEN '{' stmt+ '}'	# IfThen
-    |	IF '(' expr ')' THEN '{' stmt+ '}' ELSE '{' stmt+ '}'	# IfElse
-    |	WHILE '(' expr ')' '{' stmt+ '}'	# While
+    |	IF expr THEN stmt					# IfThen
+    |	IF expr THEN stmt ELSE stmt			# IfElse
+    |	DO stmt WHILE expr ';'				# DoWhile
+    |	WHILE expr DO stmt					# WhileDo
+    |	'{' stmt+ '}'						# Nested
     ;
 
 expr:	ID									# Variable

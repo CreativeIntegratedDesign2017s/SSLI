@@ -30,6 +30,7 @@ OR  :	'||' ;
 IF  :	'if' ;
 THEN:	'then' ;
 ELSE:	'else' ;
+DO  :	'do' ;
 WHILE:	'while' ;
 PRINT:	'print' ;
 RETURN:	'return' ;
