@@ -12,14 +12,13 @@ prgm:	EOF									# EndPrgm
 
 stmt:	SC									# Blank
     |	expr SC								# Evaluate
-    |	PRINT expr SC						# Print
-    |	RETURN expr SC						# Return
     |	ID ID (':=' expr)? ';'				# Define
     |	expr ':=' expr ';'					# Assign
     |	IF expr THEN stmt					# IfThen
     |	IF expr THEN stmt ELSE stmt			# IfElse
     |	DO stmt WHILE expr ';'				# DoWhile
     |	WHILE expr DO stmt					# WhileDo
+    |	RETURN expr SC						# Return
     |	'{' stmt+ '}'						# Nested
     ;
 
