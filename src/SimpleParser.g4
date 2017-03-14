@@ -14,9 +14,8 @@ stmt:	SC									# Blank
     |	expr SC								# Evaluate
     |	PRINT expr SC						# Print
     |	RETURN expr SC						# Return
-    |	ID ID SC							# Define
-    |	ID ':=' expr SC						# Assign
-    |	ID ID ':=' expr SC					# Initiate
+    |	ID ID (':=' expr)? ';'				# Define
+    |	expr ':=' expr ';'					# Assign
     |	IF expr THEN stmt					# IfThen
     |	IF expr THEN stmt ELSE stmt			# IfElse
     |	DO stmt WHILE expr ';'				# DoWhile
@@ -28,10 +27,9 @@ expr:	ID									# Variable
     |	BOOL								# Boolean
     |	INT									# Integer
     |	STR									# String
-    |	'{' expr (CM expr)* '}'				# Compound
-    |	ID '.' ID							# Member
-    |	ID '(' subst ')'					# ProcCall
-    |	ID '[' expr (CL expr)? ']'			# Substr
+    |	expr '.' expr						# Member
+    |	expr '(' subst ')'					# ProcCall
+    |	expr '[' expr (CL expr)? ']'		# Subscript
     |	op=('+'|'-') expr					# SignBit
     |	<assoc=right> expr '^' expr			# Pow
     |	expr op=('*'|'/') expr				# MulDiv
@@ -41,6 +39,7 @@ expr:	ID									# Variable
     |	expr AND expr						# And
     |	expr OR expr						# Or
     |	'(' expr ')'						# Bracket
+    |	'{' expr (CM expr)* '}'				# Compound
     ;
 
 param:	/* epsilon */ | VOID | ID ID (CM ID ID)* ;
