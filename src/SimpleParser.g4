@@ -4,30 +4,30 @@ options { tokenVocab=SimpleLexer; }
 
 prgm:	EOF									# EndPrgm
     |	stmt prgm							# Statement
-    |	ENUM ID '{' ID (CM ID)* '}' prgm	# EnumDef
-    |	TYPE ID '{' (ID ID SC)+ '}' prgm	# TypeDef
+    |	ENUM ID '{' ID (',' ID)* '}' prgm	# EnumDef
+    |	TYPE ID '{' (ID ID ';')+ '}' prgm	# TypeDef
     |	PROC ID '(' param ')' stmt prgm		# ProcDef
-    |	IMPORT STR SC prgm					# Import
+    |	IMPORT STR ';' prgm					# Import
     ;
 
-stmt:	SC									# Blank
-    |	expr SC								# Evaluate
+stmt:	';'									# Blank
+    |	expr ';'							# Check
     |	ID ID (':=' expr)? ';'				# Define
     |	expr ':=' expr ';'					# Assign
     |	IF expr THEN stmt (ELSE stmt)? END	# IfElse
     |	DO stmt WHILE expr END				# DoWhile
     |	WHILE expr DO stmt END				# WhileDo
-    |	RETURN expr? SC						# Return
+    |	RETURN expr? ';'					# Return
     |	'{' stmt+ '}'						# Nested
     ;
 
-expr:	ID									# Variable
+expr:	ID									# Identifier
     |	BOOL								# Boolean
     |	INT									# Integer
     |	STR									# String
     |	expr '.' expr						# Member
     |	expr '(' subst ')'					# ProcCall
-    |	expr '[' expr (CL expr)? ']'		# Subscript
+    |	expr '[' expr (':' expr)? ']'		# Subscript
     |	op=('+'|'-') expr					# SignBit
     |	<assoc=right> expr '^' expr			# Pow
     |	expr op=('*'|'/') expr				# MulDiv
@@ -40,5 +40,5 @@ expr:	ID									# Variable
     |	'{' expr (CM expr)* '}'				# Compound
     ;
 
-param:	/* epsilon */ | VOID | ID ID (CM ID ID)* ;
-subst:	/* epsilon */ | VOID | expr (CM expr)* ;
+param:	/* epsilon */ | VOID | ID ID (',' ID ID)* ;
+subst:	/* epsilon */ | VOID | expr (',' expr)* ;
