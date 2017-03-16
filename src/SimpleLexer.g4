@@ -32,6 +32,7 @@ THEN:	'then' ;
 ELSE:	'else' ;
 DO  :	'do' ;
 WHILE:	'while' ;
+END :	'end' ;
 RETURN:	'return' ;
 IMPORT:	'import' ;
 ENUM:	'enum' ;

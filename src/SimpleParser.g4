@@ -14,11 +14,10 @@ stmt:	SC									# Blank
     |	expr SC								# Evaluate
     |	ID ID (':=' expr)? ';'				# Define
     |	expr ':=' expr ';'					# Assign
-    |	IF expr THEN stmt					# IfThen
-    |	IF expr THEN stmt ELSE stmt			# IfElse
-    |	DO stmt WHILE expr ';'				# DoWhile
-    |	WHILE expr DO stmt					# WhileDo
-    |	RETURN expr SC						# Return
+    |	IF expr THEN stmt (ELSE stmt)? END	# IfElse
+    |	DO stmt WHILE expr END				# DoWhile
+    |	WHILE expr DO stmt END				# WhileDo
+    |	RETURN expr? SC						# Return
     |	'{' stmt+ '}'						# Nested
     ;
 
