@@ -36,6 +36,7 @@ END :	'end' ;
 RETURN:	'return' ;
 IMPORT:	'import' ;
 ENUM:	'enum' ;
+TDEF:	'typedef' ;
 TYPE:	'type' ;
 PROC:	'proc' ;
 VOID:   'void' ;
