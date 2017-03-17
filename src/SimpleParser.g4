@@ -4,33 +4,31 @@ options { tokenVocab=SimpleLexer; }
 
 prgm:	EOF									# EndPrgm
     |	stmt prgm							# Statement
-    |	ENUM ID '{' ID (CM ID)* '}' prgm	# EnumDef
-    |	TYPE ID '{' (ID ID SC)+ '}' prgm	# TypeDef
-    |	PROC ID '(' param ')' stmt prgm		# ProcDef
-    |	IMPORT STR SC prgm					# Import
+    |	ENUM ID '{' ID (',' ID)* '}' prgm	# EnumDef
+    |	TYPE ID '{' (ID ID ';')+ '}' prgm	# Composite
+    |	TDEF ID ID ';' prgm					# Derived
+    |	PROC ID ID '(' param ')' stmt prgm	# ProcDef
+    |	IMPORT STR ';' prgm					# Import
     ;
 
-stmt:	SC									# Blank
-    |	expr SC								# Evaluate
-    |	PRINT expr SC						# Print
-    |	RETURN expr SC						# Return
+stmt:	';'									# Blank
+    |	expr ';'							# Check
+    |	ID ID (':=' expr)? ';'				# Define
+    |	expr ':=' expr ';'					# Assign
+    |	IF expr THEN stmt (ELSE stmt)? END	# IfElse
+    |	DO stmt WHILE expr END				# DoWhile
+    |	WHILE expr DO stmt END				# WhileDo
+    |	RETURN expr? ';'					# Return
     |	'{' stmt+ '}'						# Nested
-    |	ID ID SC							# Define
-    |	ID ':=' expr SC						# Assign
-    |	ID ID ':=' expr SC					# Initiate
-    |	IF '(' expr ')' THEN '{' stmt+ '}'	# IfThen
-    |	IF '(' expr ')' THEN '{' stmt+ '}' ELSE '{' stmt+ '}'	# IfElse
-    |	WHILE '(' expr ')' '{' stmt+ '}'	# While
     ;
 
-expr:	ID									# Variable
+expr:	ID									# Identifier
     |	BOOL								# Boolean
     |	INT									# Integer
     |	STR									# String
-    |	'{' expr (CM expr)* '}'				# Compound
-    |	ID '.' ID							# Member
-    |	ID '(' subst ')'					# ProcCall
-    |	ID '[' expr (CL expr)? ']'			# Substr
+    |	expr '.' expr						# Member
+    |	expr '(' subst ')'					# ProcCall
+    |	expr '[' expr (':' expr)? ']'		# Subscript
     |	op=('+'|'-') expr					# SignBit
     |	<assoc=right> expr '^' expr			# Pow
     |	expr op=('*'|'/') expr				# MulDiv
@@ -40,7 +38,8 @@ expr:	ID									# Variable
     |	expr AND expr						# And
     |	expr OR expr						# Or
     |	'(' expr ')'						# Bracket
+    |	'{' expr (CM expr)* '}'				# Compound
     ;
 
-param:	/* epsilon */ | VOID | ID ID (CM ID ID)* ;
-subst:	/* epsilon */ | VOID | expr (CM expr)* ;
+param:	/* epsilon */ | VOID | ID ID (',' ID ID)* ;
+subst:	/* epsilon */ | VOID | expr (',' expr)* ;
