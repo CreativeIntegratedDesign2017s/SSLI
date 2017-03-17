@@ -5,21 +5,32 @@ options { tokenVocab=SimpleLexer; }
 prgm:	EOF									# EndPrgm
     |	stmt prgm							# Statement
     |	ENUM ID '{' ID (',' ID)* '}' prgm	# EnumDef
-    |	TYPE ID '{' (ID ID ';')+ '}' prgm	# Composite
-    |	TDEF ID ID ';' prgm					# Derived
+    |	TDEF ID ID ';' prgm					# TypeDef
     |	PROC ID ID '(' param ')' stmt prgm	# ProcDef
     |	IMPORT STR ';' prgm					# Import
+//  |	TYPE ID '{' (ID ID ';')+ '}' prgm	# Composite
     ;
 
 stmt:	';'									# Blank
     |	expr ';'							# Check
-    |	ID ID (':=' expr)? ';'				# Define
+    |	tid decl init ';'					# Declare
     |	expr ':=' expr ';'					# Assign
     |	IF expr THEN stmt (ELSE stmt)? END	# IfElse
     |	DO stmt WHILE expr END				# DoWhile
     |	WHILE expr DO stmt END				# WhileDo
     |	RETURN expr? ';'					# Return
     |	'{' stmt+ '}'						# Nested
+    ;
+
+/* Components of Declare Statement */
+tid :	ID									# NormType
+//  |	ID '@'								# RefType
+    ;
+decl: ID									# VarDecl
+    | ID '[' INT ']'						# ArrDecl
+    ;
+init: /* epsilon */							# ByDefault
+    | ':=' expr								# ByValue
     ;
 
 expr:	ID									# Identifier
