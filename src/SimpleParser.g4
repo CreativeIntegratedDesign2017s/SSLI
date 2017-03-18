@@ -56,7 +56,8 @@ expr:	ID									# Identifier
     |	STR									# String
 //  |	expr '.' ID							# Member
     |	expr '(' st ')'						# ProcCall
-    |	expr '[' expr (':' expr)? ']'		# Subscript
+    |	expr '[' expr ']'					# Subscript
+    |	expr '[' expr? ':' expr? ']'		# Substring
     |	op=('+'|'-') expr					# SignBit
     |	<assoc=right> expr '^' expr			# Pow
     |	expr op=('*'|'/') expr				# MulDiv
