@@ -1,8 +1,5 @@
 parser grammar SimpleParser;
-
 options { tokenVocab=SimpleLexer; }
-
-/* Main Program */
 prgm:	unit* ;
 
 /* Interpretation Unit */
