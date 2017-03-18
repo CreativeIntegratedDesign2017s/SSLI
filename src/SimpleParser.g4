@@ -3,15 +3,14 @@ options { tokenVocab=SimpleLexer; }
 prgm:	unit* ;
 
 /* Interpretation Unit */
-unit:	IMPORT STR ';'						# Import
+unit:	stmt								# Statement
     |	rtype ID '(' para ')' stmt			# Procedure
-    |	stmt								# Statement
+    |	IMPORT STR ';'						# Import
     ;
 
 /* Statements */
 stmt:	';'									# Blank
     |	expr ';'							# Check
-    |	'{' stmt+ '}'						# Nested
     |	type ID init ';'					# Declare
     |	dest '=' expr ';'					# Assign
     |	IF expr THEN stmt END				# IfThen
@@ -19,6 +18,7 @@ stmt:	';'									# Blank
     |	DO stmt WHILE expr END				# DoWhile
     |	WHILE expr DO stmt END				# WhileDo
     |	RETURN expr? ';'					# Return
+    |	'{' stmt+ '}'						# Nested
     ;
 
 /* Expressions */
@@ -55,6 +55,4 @@ dest:	ID									# VarDest
 para:	/* epsilon */ | VOID | ptype ID (',' ptype ID)* ;
 argu:	/* epsilon */ | VOID | expr (',' expr)* ;
 rtype:	VOID | ID ;
-ptype:	ID									# VarPass
-    |	ID '[' ']'							# ArrPass
-    ;
+ptype:	ID | ID '[' ']' ;
