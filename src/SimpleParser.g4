@@ -2,63 +2,37 @@ parser grammar SimpleParser;
 
 options { tokenVocab=SimpleLexer; }
 
-/* Program */
-prgm:	EOF									# EndPrgm
-    |	stmt prgm							# Statement
-    |	ENUM ID '{' ID (',' ID)* '}' prgm	# EnumDef
-    |	TYPE ID ID ';' prgm					# TypeDef
-    |	PROC rt ID '(' pr ')' stmt prgm		# ProcDef
-    |	IMPORT STR ';' prgm					# Import
-//  |	TYPE ID '{' (ID ID ';')+ '}' prgm	# Composite
+/* Main Program */
+prgm:	unit* ;
+
+/* Interpretation Unit */
+unit:	IMPORT STR ';'						# Import
+    |	rtype ID '(' para ')' stmt			# Procedure
+    |	stmt								# Statement
     ;
 
-/* Statement */
+/* Statements */
 stmt:	';'									# Blank
     |	expr ';'							# Check
     |	'{' stmt+ '}'						# Nested
-    /* Declarations && Assignments */
-    |	tid vid init ';'					# Declare
-    |	lval ':=' rval ';'					# Assign
-    /* Selection Statements */
+    |	type ID init ';'					# Declare
+    |	dest '=' expr ';'					# Assign
     |	IF expr THEN stmt END				# IfThen
     |	IF expr THEN stmt ELSE stmt END		# IfElse
-    /* Iteration Statements */
     |	DO stmt WHILE expr END				# DoWhile
     |	WHILE expr DO stmt END				# WhileDo
-    /* Jump Statements */
-    |	CONTINUE ';'						# Continue
-    |	BREAK ';'							# Break
     |	RETURN expr? ';'					# Return
     ;
 
-// for Declare Statements
-tid :	ID									# NormType
-//  |	ID '@'								# RefType
-    ;
-vid :	ID									# VarDecl
-    |	ID '[' INT ']'						# ArrDecl
-    ;
-init: /* epsilon */							# ByDefault
-    |	':=' expr							# ByValue
-    ;
-
-// for Assign Statements
-lval:	ID									# VarAsgn
-    |	ID '[' expr ']'						# ArrAsgn
-//  |	'#' ID								# RefAsgn
-    ;
-rval:	expr ;
-
-/* Expression */
+/* Expressions */
 expr:	ID									# Identifier
     |	BOOL								# Boolean
     |	INT									# Integer
     |	STR									# String
-//  |	expr '.' ID							# Member
-    |	expr '(' st ')'						# ProcCall
+    |	expr '(' argu ')'					# ProcCall
     |	expr '[' expr ']'					# Subscript
-    |	expr '[' expr? ':' expr? ']'		# Substring
-    |	op=('+'|'-') expr					# SignBit
+    |	expr '[' expr ':' expr ']'			# Substring
+    |	op=('+'|'-') expr					# UnaryPM
     |	<assoc=right> expr '^' expr			# Pow
     |	expr op=('*'|'/') expr				# MulDiv
     |	expr op=('+'|'-') expr				# AddSub
@@ -67,10 +41,23 @@ expr:	ID									# Identifier
     |	expr AND expr						# And
     |	expr OR expr						# Or
     |	'(' expr ')'						# Bracket
-    |	'{' expr (',' expr)* '}'			# Compound
     ;
 
-// for Function Define & Call
-rt  :	VOID | ID ;
-pr  :	/* epsilon */ | VOID | ID ID (',' ID ID)* ;
-st  :	/* epsilon */ | VOID | expr (',' expr)* ;
+// declare & assign subrules
+type:	ID									# VarType
+    |	ID '[' INT ']'						# ArrType
+    ;
+init:	/* epsilon */						# DefInit
+    |	'=' expr							# ValInit
+    ;
+dest:	ID									# VarDest
+    |	ID '[' expr ']'						# ArrDest
+    ;
+
+// procedure subrules
+para:	/* epsilon */ | VOID | ptype ID (',' ptype ID)* ;
+argu:	/* epsilon */ | VOID | expr (',' expr)* ;
+rtype:	VOID | ID ;
+ptype:	ID									# VarPass
+    |	ID '[' ']'							# ArrPass
+    ;

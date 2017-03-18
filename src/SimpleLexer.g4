@@ -7,11 +7,10 @@ LCB :	'{' ;
 RCB :	'}' ;
 LSB :	'[' ;
 RSB :	']' ;
-DOT :	'.' ;
 CM  :	',' ;
 CL  :	':' ;
 SC  :	';' ;
-ASN :	':=' ;
+ASN :	'=' ;
 ADD :	'+' ;
 SUB :	'-' ;
 MUL :	'*' ;
@@ -33,14 +32,9 @@ ELSE:	'else' ;
 DO  :	'do' ;
 WHILE:	'while' ;
 END :	'end' ;
-CONTINUE:	'continue' ;
-BREAK:	'break' ;
 RETURN:	'return' ;
 IMPORT:	'import' ;
-ENUM:	'enum' ;
-TYPE:	'type' ;
-PROC:	'proc' ;
-VOID:   'void' ;
+VOID:	'void' ;
 
 /* Default Mode */
 BOOL:	'true' | 'false' ;
