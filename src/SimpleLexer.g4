@@ -24,6 +24,7 @@ GE  :	'>=' ;
 NOT :	'!' ;
 AND :	'&&' ;
 OR  :	'||' ;
+AMP :	'&' ;
 
 /* Keywords */
 IF  :	'if' ;

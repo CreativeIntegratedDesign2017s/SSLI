@@ -41,18 +41,12 @@ expr:	ID									# Identifier
     ;
 
 // declare & assign subrules
-type:	ID									# VarType
-    |	ID '[' INT ']'						# ArrType
-    ;
-init:	/* epsilon */						# DefInit
-    |	'=' expr							# ValInit
-    ;
-dest:	ID									# VarDest
-    |	ID '[' expr ']'						# ArrDest
-    ;
+type:	ID | ID '[' INT ']' ;
+dest:	ID | ID '[' expr ']' ;
+init:	/* epsilon */ | '=' expr ;
 
 // procedure subrules
 para:	/* epsilon */ | VOID | ptype ID (',' ptype ID)* ;
 argu:	/* epsilon */ | VOID | expr (',' expr)* ;
 rtype:	VOID | ID ;
-ptype:	ID | ID '[' ']' ;
+ptype:	ID | ID '&' | ID '[' ']' ;
