@@ -9,8 +9,7 @@ unit:	stmt								# Statement
     ;
 
 /* Statements */
-stmt:	';'									# Blank
-    |	expr ';'							# Check
+stmt:	expr? ';'							# Evaluate
     |	type ID init ';'					# Declare
     |	dest '=' expr ';'					# Assign
     |	IF expr THEN stmt END				# IfThen
@@ -18,7 +17,7 @@ stmt:	';'									# Blank
     |	DO stmt WHILE expr END				# DoWhile
     |	WHILE expr DO stmt END				# WhileDo
     |	RETURN expr? ';'					# Return
-    |	'{' stmt+ '}'						# Nested
+    |	'{' stmt* '}'						# Nested
     ;
 
 /* Expressions */
@@ -41,12 +40,12 @@ expr:	ID									# Identifier
     ;
 
 // declare & assign subrules
-type:	ID | ID '[' INT ']' ;
-dest:	ID | ID '[' expr ']' ;
-init:	/* epsilon */ | '=' expr ;
+type:	ID ('[' INT ']')* ;
+dest:	ID ('[' expr ']')* ;
+init:	('=' expr)? ;
 
 // procedure subrules
-para:	/* epsilon */ | VOID | ptype ID (',' ptype ID)* ;
-argu:	/* epsilon */ | VOID | expr (',' expr)* ;
+para:	VOID? | ptype ID (',' ptype ID)* ;
+argu:	VOID? | expr (',' expr)* ;
 rtype:	VOID | ID ;
-ptype:	ID | ID '&' | ID '[' ']' ;
+ptype:	ID | ID '&' | ID ('[' ']')+ ;
