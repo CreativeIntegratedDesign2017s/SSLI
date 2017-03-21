@@ -4,7 +4,8 @@ prgm:	unit* ;
 
 /* Interpretation Unit */
 unit:	stmt								# Statement
-    |	rtype ID '(' para ')' stmt			# Procedure
+    |	rtype ID '(' para_list ')' stmt		# Procedure
+    |	ENUM ID '{' enum_list '}'			# Enumerate
     |	IMPORT STR ';'						# Import
     ;
 
@@ -25,7 +26,7 @@ expr:	ID									# Identifier
     |	BOOL								# Boolean
     |	INT									# Integer
     |	STR									# String
-    |	expr '(' argu ')'					# ProcCall
+    |	expr '(' argu_list ')'				# ProcCall
     |	expr '[' expr ']'					# Subscript
     |	expr '[' expr ':' expr ']'			# Substring
     |	op=('+'|'-') expr					# UnaryPM
@@ -45,7 +46,10 @@ dest:	ID ('[' expr ']')* ;
 init:	('=' expr)? ;
 
 // procedure subrules
-para:	VOID? | ptype ID (',' ptype ID)* ;
-argu:	VOID? | expr (',' expr)* ;
+para_list: VOID? | ptype ID (',' ptype ID)* ;
+argu_list: VOID? | expr (',' expr)* ;
 rtype:	VOID | ID ;
 ptype:	ID | ID '&' | ID ('[' ']')+ ;
+
+// type declaration subrules
+enum_list: ID (',' ID)* ;

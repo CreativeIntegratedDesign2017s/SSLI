@@ -36,6 +36,7 @@ END :	'end' ;
 RETURN:	'return' ;
 IMPORT:	'import' ;
 VOID:	'void' ;
+ENUM:	'enum' ;
 
 /* Default Mode */
 BOOL:	'true' | 'false' ;
