@@ -30,12 +30,14 @@ public class SimpleInterpreter {
 
         while (true) {
             System.out.print(">>> ");
-            String code = br.readLine();
+            String code = br.readLine() + "\n";
             int paren = paren_matcher(code);
+
+            if ("exit;\n".equals(code)) break;
 
             while (paren != 0) {
                 System.out.print("... ");
-                String line = br.readLine();
+                String line = br.readLine() + "\n";
                 code += line;
                 paren += paren_matcher(line);
             }
