@@ -2,6 +2,7 @@
  * Created by HeeM on 2017-03-13.
  * Simply implemented for System.in by Holim on 2017-03-13.
  * Interactive Mode with parentheses-matcher by Holim on 2017-03-19.
+ * Bail-out Error Reporting & Scope Checker by Holim on 2017-03-22.
  */
 
 import java.io.*;
@@ -10,7 +11,7 @@ import org.antlr.v4.runtime.tree.*;
 
 public class SimpleInterpreter {
 
-    static public int paren_matcher(String line) {
+    static int paren_matcher(String line) {
         int paren = 0;
         for (int i = 0; i < line.length(); i++) {
             switch (line.charAt(i)) {
@@ -28,28 +29,54 @@ public class SimpleInterpreter {
         InputStream is = System.in;
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
+        SymbolTable symbols = new SymbolTable(SymbolTable.typeDecl, "bool", "sort", null);
+        symbols = new SymbolTable(SymbolTable.typeDecl, "int", "sort", symbols);
+        symbols = new SymbolTable(SymbolTable.typeDecl, "str", "sort", symbols);
+
         while (true) {
             System.out.print(">>> ");
             String code = br.readLine() + "\n";
+
+            // Match #.brackets in input codes
             int paren = paren_matcher(code);
-
-            if ("exit;\n".equals(code)) break;
-
-            while (paren != 0) {
+            while (paren > 0) {
                 System.out.print("... ");
                 String line = br.readLine() + "\n";
                 code += line;
                 paren += paren_matcher(line);
             }
 
+            // Build Lexer & Parser
             ANTLRInputStream input = new ANTLRInputStream(code);
             SimpleLexer lexer = new SimpleLexer(input);
             CommonTokenStream tokens = new CommonTokenStream(lexer);
             SimpleParser parser = new SimpleParser(tokens);
-            ParseTree tree = parser.prgm();
 
-            // TODO: Something
+            // Set Error Listener & Strategy
+            parser.removeErrorListeners();
+            parser.addErrorListener(new ErrorListener());
+            parser.setErrorHandler(new ErrorStrategy());
+
+            // Build Parse Tree
+            ParseTree tree;
+            try { tree = parser.prgm(); }
+            catch (Exception e) { continue; }
+
+            // Check Scope Consistency
+            ScopeChecker scpChecker = new ScopeChecker(symbols);
+            ParseTreeWalker walker = new ParseTreeWalker();
+            try { walker.walk(scpChecker, tree); }
+            catch (Exception e) { continue; }
+
+            // Check Type Consistency
+            TypeChecker typeChecker = new TypeChecker(scpChecker.scope);
+            try { typeChecker.visit(tree); }
+            catch (Exception e) { continue; }
+
+            // TODO: Make AST & IR Codes
             System.out.println(tree.toStringTree(parser));
+
+            // TODO: Execute the Code
         }
     }
 }
