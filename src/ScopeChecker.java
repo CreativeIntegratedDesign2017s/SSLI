@@ -11,6 +11,8 @@ public class ScopeChecker extends SimpleParserBaseListener {
     SymbolTable global;
     Stack<SymbolTable> block;
     public ParseTreeProperty<SymbolTable> scope;
+    String scope_name;		// debug
+    int scope_depth = 0;
 
     /* Constructor */
     public ScopeChecker(SymbolTable symbols) {
@@ -18,6 +20,7 @@ public class ScopeChecker extends SimpleParserBaseListener {
         this.global = symbols;
         block = new Stack<SymbolTable>();
         scope = new ParseTreeProperty<SymbolTable>();
+        scope_name = "Global";
     }
 
     /* Error Reporting */
@@ -50,6 +53,7 @@ public class ScopeChecker extends SimpleParserBaseListener {
         global.declProc(id, String.join(",", ptype), rtype);
         block.push(global);
         current = new SymbolTable(current);
+        scope_name = id;
 
         // Declare parameters in inner scope
         for (int i = 0; i < count; i++) {
@@ -64,8 +68,10 @@ public class ScopeChecker extends SimpleParserBaseListener {
 
     @Override
     public void exitProcedure(SimpleParser.ProcedureContext ctx) {
-        current.print();
+        if (!current.vars.isEmpty())
+            current.print(scope_name);
         current = block.pop();
+        scope_name = "Global";
     }
 
     @Override
@@ -112,12 +118,18 @@ public class ScopeChecker extends SimpleParserBaseListener {
     }
 
     @Override
-    public void enterNested(SimpleParser.NestedContext ctx) { block.push(current); }
+    public void enterNested(SimpleParser.NestedContext ctx) {
+        block.push(current);
+        current = new SymbolTable(current);
+        scope_depth += 1;
+    }
 
     @Override
     public void exitNested(SimpleParser.NestedContext ctx) {
-        current.print();
+        if (!current.vars.isEmpty())
+            current.print(scope_name + " " + String.valueOf(scope_depth) + "th");
         current = block.pop();
+        scope_depth -= 1;
     }
 
     @Override
@@ -126,11 +138,5 @@ public class ScopeChecker extends SimpleParserBaseListener {
         if (!current.isNameDeclared(vid))
             error(vid + ": Undeclared Identifier");
         scope.put(ctx, current);
-    }
-
-    public void printGlobal() {
-        System.out.println("\n<<<<< Global Scope >>>>>");
-        global.print();
-        System.out.println("<<<<< End of Global Scope >>>>>\n");
     }
 }

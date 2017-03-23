@@ -70,11 +70,11 @@ public class SimpleInterpreter {
             // Check Scope Consistency
             ScopeChecker scpChecker = new ScopeChecker(symbols);
             ParseTreeWalker walker = new ParseTreeWalker();
-            try { walker.walk(scpChecker, tree); }
-            catch (Exception e) { continue; }
-            finally {
-                scpChecker.printGlobal();
+            try {
+                walker.walk(scpChecker, tree);
+                scpChecker.global.print(scpChecker.scope_name);
             }
+            catch (Exception e) { continue; }
 
             // Check Type Consistency
             TypeChecker typeChecker = new TypeChecker(scpChecker.scope);
