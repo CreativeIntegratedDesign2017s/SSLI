@@ -13,8 +13,7 @@ unit:	stmt								# Statement
 stmt:	expr? ';'							# Evaluate
     |	type ID init ';'					# Declare
     |	dest '=' expr ';'					# Assign
-    |	IF expr THEN stmt END				# IfThen
-    |	IF expr THEN stmt ELSE stmt END		# IfElse
+    |	IF expr THEN stmt (ELSE stmt)? END	# IfElse
     |	DO stmt WHILE expr END				# DoWhile
     |	WHILE expr DO stmt END				# WhileDo
     |	RETURN expr? ';'					# Return
@@ -33,7 +32,7 @@ expr:	ID									# Identifier
     |	<assoc=right> expr '^' expr			# Pow
     |	expr op=('*'|'/') expr				# MulDiv
     |	expr op=('+'|'-') expr				# AddSub
-    |	expr op=(LT|LE|EQ|GE|GT) expr		# Compare
+    |	expr op=(LT|LE|EQ|NEQ|GE|GT) expr	# Compare
     |	NOT expr							# Not
     |	expr AND expr						# And
     |	expr OR expr						# Or

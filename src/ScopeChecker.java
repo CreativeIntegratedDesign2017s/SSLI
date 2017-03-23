@@ -8,12 +8,16 @@ import org.antlr.v4.runtime.tree.*;
 public class ScopeChecker extends SimpleParserBaseListener {
     /* Symbol Table & Scope */
     SymbolTable current;
-    Stack<SymbolTable> block = new Stack<SymbolTable>();
-    public ParseTreeProperty<SymbolTable> scope = new ParseTreeProperty<SymbolTable>();
+    SymbolTable global;
+    Stack<SymbolTable> block;
+    public ParseTreeProperty<SymbolTable> scope;
 
     /* Constructor */
     public ScopeChecker(SymbolTable symbols) {
         this.current = symbols;
+        this.global = symbols;
+        block = new Stack<SymbolTable>();
+        scope = new ParseTreeProperty<SymbolTable>();
     }
 
     /* Error Reporting */
@@ -24,41 +28,37 @@ public class ScopeChecker extends SimpleParserBaseListener {
 
     @Override
     public void enterProcedure(SimpleParser.ProcedureContext ctx) {
+        // Check rType
         String rtype = ctx.rtype().getText();
-        if (!rtype.equals("void") && !current.checkTypeDeclared(rtype))
-            error("Undeclared type '" + rtype + "'");
+        if (!global.hasType(rtype) && !rtype.equals("void"))
+            error(rtype + ": Undeclared type");
 
-        String ptype;
+        // Check pTypes
+        List<String> ptype = new ArrayList<String>();
         int count = (ctx.para_list().getChildCount() + 1) / 3;
-        if (count != 0) {
-            ptype = ctx.para_list().ptype(0).getText();
-            if (!current.checkTypeDeclared(ptype))
-                error("Undeclared type '" + ptype + "'");
-            for (int i = 1; i < count; i++) {
-                String temp = ctx.para_list().ptype(i).getText();
-                if (!current.checkTypeDeclared(temp))
-                    error("Undeclared type '" + temp + "'");
-                ptype += "," + temp;
-            }
+        for (int i = 0; i < count; i++) {
+            ptype.add(ctx.para_list().ptype(i).getText());
+            if (!global.hasType(ptype.get(i)))
+                error(ptype.get(i) + ": Undeclared type");
         }
-        else { ptype = "void"; }
 
+        // Check procedure name
         String id = ctx.ID().getText();
-        String type = ptype + "->" + rtype;
-        if (current.checkProcRedundant(id, type))
-            error("'" + id + "' is already defined.");
+        if (global.hasProc(id, String.join(",",ptype)) || global.hasVar(id))
+            error(id + "(" + String.join(",", ptype) + "): Already defined");
 
-        current = new SymbolTable(SymbolTable.procDecl, id, type, current);
-        block.push(current);
+        global.declProc(id, String.join(",", ptype), rtype);
+        block.push(global);
+        current = new SymbolTable(current);
 
+        // Declare parameters in inner scope
         for (int i = 0; i < count; i++) {
             String pid = ctx.para_list().ID(i).getText();
-            if (current.checkVarRedundant(pid, block.peek()))
-                error("'" + pid + "' is already defined.");
-
-            current = new SymbolTable(SymbolTable.varDecl,
-                    pid, ctx.para_list().ptype(i).getText(),
-                    current);
+            if (current.vars.get(pid) != null
+            || global.types.get(pid) != null
+            || global.procs.get(pid) != null)
+                error(pid + ": Already defined");
+            current.declVar(pid, ctx.para_list().ptype(i).getText());
         }
     }
 
@@ -67,40 +67,45 @@ public class ScopeChecker extends SimpleParserBaseListener {
 
     @Override
     public void enterEnumerate(SimpleParser.EnumerateContext ctx) {
+        // Check Enumerator Type name
         String id = ctx.ID().getText();
-        if (current.checkTypeRedundant(id))
-            error("'" + id + "' is already defined.");
-
-        current = new SymbolTable(SymbolTable.typeDecl, id, "sort", current);
+        if (global.types.get(id) != null
+        || global.vars.get(id) != null)
+            error(id + ": Already defined");
+        global.declType(id);
 
         int count = (ctx.enum_list().getChildCount() + 1) / 2;
         for (int i = 0; i < count; i++) {
             String eid = ctx.enum_list().ID(i).getText();
-            if (current.checkVarRedundant(eid, null))
-                error("'" + eid + "' is already defined.");
-
-            current = new SymbolTable(SymbolTable.varDecl, eid, id, current);
+            if (global.vars.get(eid) != null
+            || global.types.get(eid) != null
+            || global.procs.get(eid) != null)
+                error(eid + ": Already defined");
+            global.declVar(eid, id);
         }
     }
 
     @Override
     public void exitDeclare(SimpleParser.DeclareContext ctx) {
         String type = ctx.type().getText();
-        if (!current.checkTypeDeclared(type))
+        if (!global.hasType(type))
             error("Undeclared Type '" + type + "'");
 
         String id = ctx.ID().getText();
-        if (current.checkVarRedundant(id, block.peek()))
+        if (current.vars.get(id) != null
+        || global.types.get(id) != null
+        || global.procs.get(id) != null)
             error("'" + id + "' is already defined.");
 
-        current = new SymbolTable(SymbolTable.varDecl, id, type, current);
+        current.declVar(id, type);
     }
 
     @Override
     public void enterAssign(SimpleParser.AssignContext ctx) {
         String vid = ctx.dest().ID().getText();
-        if (!current.checkVarDeclared(vid))
-            error("Undeclared Variable '" + vid + "'");
+        if (!current.isNameDeclared(vid))
+            error(vid + ": Undeclared Identifier");
+        scope.put(ctx, current);
     }
 
     @Override
@@ -112,9 +117,8 @@ public class ScopeChecker extends SimpleParserBaseListener {
     @Override
     public void enterIdentifier(SimpleParser.IdentifierContext ctx) {
         String vid = ctx.getText();
-        if (!current.checkNameDeclared(vid))
-            error("Undeclared Variable '" + vid + "'");
-
+        if (!current.isNameDeclared(vid))
+            error(vid + ": Undeclared Identifier");
         scope.put(ctx, current);
     }
 }

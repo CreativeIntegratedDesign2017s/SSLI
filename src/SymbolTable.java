@@ -2,113 +2,67 @@
  * Created by Holim on 2017-03-21.
  */
 
-public class SymbolTable {
-    public final static int varDecl = 0;
-    public final static int typeDecl = 1;
-    public final static int procDecl = 2;
+import java.util.*;
 
-    int declType;
-    String name;
-    String type;
+public class SymbolTable {
+
+    /* Field Variables */
+    HashMap<String, String> vars;
+    HashMap<String, String> types;
+    HashMap<String, HashMap<String, String>> procs;
     SymbolTable prev;
 
     /* Constructor */
-    public SymbolTable(int declType, String name, String type, SymbolTable prev) {
-        this.declType = declType;
-        this.name = name;
-        this.type = type;
-        this.prev = prev;
-    }
-
-    /* Procedure 이름은 Variable 이름과 겹치면 안되고,
-     * Type 이름과 겹쳐도 되며 오버로딩이 가능하다.
-     */
-    public boolean checkProcRedundant(String name, String type) {
-        if (this.name.equals(name)) {
-            if (this.declType == varDecl)
-                return true;
-            if (this.declType == procDecl && this.type.equals(type))
-                return true;
+    public SymbolTable(SymbolTable prev) {
+        if (prev == null) {
+            /* Global Scope */
+            vars = new HashMap<String, String>();
+            types = new HashMap<String, String>();
+            procs = new HashMap<String, HashMap<String, String>>();
+            this.prev = null;
         }
-        if (this.prev == null)
-            return false;
-        else
-            return this.prev.checkProcRedundant(name, type);
-    }
-
-    public boolean checkProcDeclared(String name, String type) {
-        if (this.declType == procDecl &&
-            this.name.equals(name) &&
-            this.type.equals(type))
-            return true;
-        else if (this.prev == null)
-            return false;
-        else
-            return this.prev.checkProcDeclared(name, type);
-    }
-
-    /* Type 이름은 Procedure 이름과 겹칠 수 있으나,
-     * Variable 이름과 겹칠 수 없다.
-     */
-    public boolean checkTypeRedundant(String name) {
-        if (this.name.equals(name)) {
-            if (declType == varDecl || declType == typeDecl)
-                return true;
+        else {
+            /* Local Scope */
+            vars = new HashMap<String, String>();
+            types = null;
+            procs = null;
+            this.prev = prev;
         }
-        if (this.prev == null)
-            return false;
-        else
-            return this.prev.checkTypeRedundant(name);
     }
 
-    public boolean checkTypeDeclared(String name) {
-        if (this.declType == typeDecl && this.name.equals(name))
-            return true;
-        else if (this.prev == null)
-            return false;
-        else
-            return this.prev.checkTypeDeclared(name);
+    public void declVar(String name, String type) { vars.put(name, type); }
+
+    public void declType(String name) { types.put(name, name); }
+
+    public void declProc(String name, String ptype, String rtype) {
+        HashMap<String, String> loads = procs.get(name);
+        if (loads == null) {
+            loads = new HashMap<String, String>();
+            loads.put(ptype, rtype);
+            procs.put(name, loads);
+        }
+        else loads.put(ptype, rtype);
     }
 
-    private boolean _checkVarGlobalRedundant(String name) {
-        if (this.name.equals(name) && this.declType != varDecl)
-            return true;
-        else if (this.prev == null)
-            return false;
-        else
-            return this.prev._checkVarGlobalRedundant(name);
+    public boolean hasVar(String name) { return (vars.get(name) != null); }
+
+    public boolean hasType(String name) { return (types.get(name) != null); }
+
+    public boolean hasProc(String name) { return (procs.get(name) != null); }
+
+    public boolean hasProc(String name, String type) {
+        if (procs.get(name) == null) return false;
+        else if (procs.get(name).get(type) == null) return false;
+        else return true;
     }
 
-    /* Variable 이름은, Block 외의 Variable 이름과 겹쳐도 된다.
-     * 나머지는 모두 불가하다.
-     */
-    public boolean checkVarRedundant(String name, SymbolTable limit) {
-        if (this == limit)
-            return this._checkVarGlobalRedundant(name);
-        else if (this.name.equals(name))
-            return true;
-        else if (this.prev == null)
-            return false;
-        else
-            return this.prev.checkVarRedundant(name, limit);
+    public boolean isNameDeclared(String name) {
+        if (this.hasVar(name)) return true;
+        else if (prev == null) {
+            if (this.hasType(name)) return true;
+            else if (this.hasProc(name)) return true;
+            else return false;
+        }
+        else return prev.isNameDeclared(name);
     }
-
-    public boolean checkVarDeclared(String name) {
-        if (this.declType == varDecl && this.name.equals(name))
-            return true;
-        else if (this.prev == null)
-            return false;
-        else
-            return this.prev.checkVarDeclared(name);
-    }
-
-    public boolean checkNameDeclared(String name) {
-        if (this.name.equals(name))
-            return true;
-        else if (this.prev == null)
-            return false;
-        else
-            return this.prev.checkNameDeclared(name);
-    }
-
 }

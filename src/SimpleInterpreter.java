@@ -29,9 +29,14 @@ public class SimpleInterpreter {
         InputStream is = System.in;
         BufferedReader br = new BufferedReader(new InputStreamReader(is));
 
-        SymbolTable symbols = new SymbolTable(SymbolTable.typeDecl, "bool", "sort", null);
-        symbols = new SymbolTable(SymbolTable.typeDecl, "int", "sort", symbols);
-        symbols = new SymbolTable(SymbolTable.typeDecl, "str", "sort", symbols);
+        SymbolTable symbols = new SymbolTable(null);
+        symbols.declType("bool");
+        symbols.declType("int");
+        symbols.declType("str");
+        symbols.declProc("print", "bool", "void");
+        symbols.declProc("print", "int", "void");
+        symbols.declProc("print", "str", "void");
+        symbols.declProc("exit", "void", "void");
 
         while (true) {
             System.out.print(">>> ");
