@@ -40,9 +40,13 @@ public class ScopeChecker extends SimpleParserBaseListener {
         List<String> ptype = new ArrayList<String>();
         int count = (ctx.para_list().getChildCount() + 1) / 3;
         for (int i = 0; i < count; i++) {
-            ptype.add(ctx.para_list().ptype(i).getText());
-            if (!global.hasType(ptype.get(i)))
-                error(ptype.get(i) + ": Undeclared type");
+            String tid = ctx.para_list().ptype(i).ID().getText();
+            if (!global.hasType(tid))
+                error(tid + ": Undeclared type");
+            if (ctx.para_list().ptype(i).getChildCount() < 3)
+                ptype.add(tid);
+            else
+                ptype.add(ctx.para_list().ptype(i).getText());
         }
 
         // Check procedure name
