@@ -65,4 +65,24 @@ public class SymbolTable {
         }
         else return prev.isNameDeclared(name);
     }
+
+    public void print() {
+        System.out.println("\n-- Variables --");
+        for (String key: vars.keySet()){
+            System.out.println(key.toString() + " " + vars.get(key).toString());
+        }
+        System.out.println("--   Types   --");
+        for (String key: types.keySet()){
+            System.out.println(key.toString() + " " + (types.containsKey(key) ? types.get(key).toString() : ""));
+        }
+        System.out.println("--   Procs   --");
+        for (String key1: procs.keySet()){
+            for (String key2: procs.get(key1).keySet()) {
+                System.out.println(key1.toString() + " " + key2.toString() + " "
+                        + (types.containsKey(key2) ? types.get(key2).toString() : ""));
+            }
+        }
+        System.out.print("---------------\n");
+    }
+
 }

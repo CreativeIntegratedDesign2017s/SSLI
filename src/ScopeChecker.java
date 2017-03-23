@@ -63,7 +63,10 @@ public class ScopeChecker extends SimpleParserBaseListener {
     }
 
     @Override
-    public void exitProcedure(SimpleParser.ProcedureContext ctx) { current = block.pop(); }
+    public void exitProcedure(SimpleParser.ProcedureContext ctx) {
+        current.print();
+        current = block.pop();
+    }
 
     @Override
     public void enterEnumerate(SimpleParser.EnumerateContext ctx) {
@@ -112,7 +115,10 @@ public class ScopeChecker extends SimpleParserBaseListener {
     public void enterNested(SimpleParser.NestedContext ctx) { block.push(current); }
 
     @Override
-    public void exitNested(SimpleParser.NestedContext ctx) { current = block.pop(); }
+    public void exitNested(SimpleParser.NestedContext ctx) {
+        current.print();
+        current = block.pop();
+    }
 
     @Override
     public void enterIdentifier(SimpleParser.IdentifierContext ctx) {
@@ -120,5 +126,11 @@ public class ScopeChecker extends SimpleParserBaseListener {
         if (!current.isNameDeclared(vid))
             error(vid + ": Undeclared Identifier");
         scope.put(ctx, current);
+    }
+
+    public void printGlobal() {
+        System.out.println("\n<<<<< Global Scope >>>>>");
+        global.print();
+        System.out.println("<<<<< End of Global Scope >>>>>\n");
     }
 }

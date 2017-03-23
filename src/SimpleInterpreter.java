@@ -72,6 +72,9 @@ public class SimpleInterpreter {
             ParseTreeWalker walker = new ParseTreeWalker();
             try { walker.walk(scpChecker, tree); }
             catch (Exception e) { continue; }
+            finally {
+                scpChecker.printGlobal();
+            }
 
             // Check Type Consistency
             TypeChecker typeChecker = new TypeChecker(scpChecker.scope);
