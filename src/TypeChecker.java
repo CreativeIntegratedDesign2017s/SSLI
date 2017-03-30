@@ -1,15 +1,13 @@
-/**
- * Created by Holim on 2017-03-22.
- */
-
-import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 
-public class TypeChecker extends SimpleParserBaseVisitor<Integer> {
-    ParseTreeProperty<SymbolTable> scope;
+class TypeChecker extends SimpleParserBaseVisitor<Integer> {
+
+    GlobalTable global;
+    ParseTreeProperty<LocalTable> scope;
 
     /* Constructor */
-    TypeChecker(ParseTreeProperty<SymbolTable> scope) {
-        this.scope = scope;
+    TypeChecker(GlobalTable _global, ParseTreeProperty<LocalTable> _scope) {
+        global = _global;
+        scope = _scope;
     }
 }

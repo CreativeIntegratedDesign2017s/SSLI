@@ -12,7 +12,7 @@ unit:	stmt								# Statement
 /* Statements */
 stmt:	expr? ';'							# Evaluate
     |	type ID init ';'					# Declare
-    |	dest '=' expr ';'					# Assign
+    |	expr '=' expr ';'					# Assign
     |	IF expr THEN stmt (ELSE stmt)? END	# IfElse
     |	DO stmt WHILE expr END				# DoWhile
     |	WHILE expr DO stmt END				# WhileDo
@@ -39,9 +39,11 @@ expr:	ID									# Identifier
     |	'(' expr ')'						# Bracket
     ;
 
-// declare & assign subrules
+// type declaration subrules
+enum_list: ID (',' ID)* ;
+
+// variable declararation subrules
 type:	ID ('[' INT ']')* ;
-dest:	ID ('[' expr ']')* ;
 init:	('=' expr)? ;
 
 // procedure subrules
@@ -49,6 +51,3 @@ para_list: VOID? | ptype ID (',' ptype ID)* ;
 argu_list: VOID? | expr (',' expr)* ;
 rtype:	VOID | ID ;
 ptype:	ID | ID '&' | ID ('[' ']')+ ;
-
-// type declaration subrules
-enum_list: ID (',' ID)* ;

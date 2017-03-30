@@ -11,7 +11,7 @@ import org.antlr.v4.runtime.tree.*;
 
 public class SimpleInterpreter {
 
-    static int paren_matcher(String line) {
+    private static int parenCount(String line) {
         int paren = 0;
         for (int i = 0; i < line.length(); i++) {
             switch (line.charAt(i)) {
@@ -26,29 +26,20 @@ public class SimpleInterpreter {
 
     static public void main(String args[]) throws IOException {
         System.out.println("Welcome to Simple Interpreter!");
-        InputStream is = System.in;
-        BufferedReader br = new BufferedReader(new InputStreamReader(is));
-
-        SymbolTable symbols = new SymbolTable(null);
-        symbols.declType("bool");
-        symbols.declType("int");
-        symbols.declType("str");
-        symbols.declProc("print", "bool", "void");
-        symbols.declProc("print", "int", "void");
-        symbols.declProc("print", "str", "void");
-        symbols.declProc("exit", "void", "void");
+        BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+        GlobalTable symbols = new GlobalTable();
 
         while (true) {
             System.out.print(">>> ");
             String code = br.readLine() + "\n";
 
             // Match #.brackets in input codes
-            int paren = paren_matcher(code);
+            int paren = parenCount(code);
             while (paren > 0) {
                 System.out.print("... ");
                 String line = br.readLine() + "\n";
                 code += line;
-                paren += paren_matcher(line);
+                paren += parenCount(line);
             }
 
             // Build Lexer & Parser
@@ -70,19 +61,26 @@ public class SimpleInterpreter {
             // Check Scope Consistency
             ScopeChecker scpChecker = new ScopeChecker(symbols);
             ParseTreeWalker walker = new ParseTreeWalker();
-            try {
-                walker.walk(scpChecker, tree);
-                scpChecker.global.print(scpChecker.scope_name);
+            try { walker.walk(scpChecker, tree); }
+            catch (Exception e) {
+                symbols.clear();
+                continue;
             }
-            catch (Exception e) { continue; }
 
             // Check Type Consistency
-            TypeChecker typeChecker = new TypeChecker(scpChecker.scope);
+            TypeChecker typeChecker = new TypeChecker(scpChecker.global, scpChecker.scope);
             try { typeChecker.visit(tree); }
-            catch (Exception e) { continue; }
+            catch (Exception e) {
+                symbols.clear();
+                continue;
+            }
+
+            // Declarations Confirmed
+            symbols.commit();
+            symbols.print();
 
             // TODO: Make AST & IR Codes
-            System.out.println(tree.toStringTree(parser));
+            System.out.println("Tree: " + tree.toStringTree(parser));
 
             // TODO: Execute the Code
         }
