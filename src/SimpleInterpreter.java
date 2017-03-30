@@ -69,7 +69,7 @@ public class SimpleInterpreter {
         ParseTree tree;
         try { tree = parser.prgm(); }
         catch (Exception e) {
-            return false;
+            return true;
         }
 
         // Check Scope Consistency
@@ -78,7 +78,7 @@ public class SimpleInterpreter {
         try { walker.walk(scpChecker, tree); }
         catch (Exception e) {
             symbols.clear();
-            return false;
+            return true;
         }
 
         // Check Type Consistency
@@ -86,7 +86,7 @@ public class SimpleInterpreter {
         try { typeChecker.visit(tree); }
         catch (Exception e) {
             symbols.clear();
-            return false;
+            return true;
         }
 
         // Declarations Confirmed
