@@ -47,8 +47,10 @@ public class SimpleInterpreter {
         while (paren > 0) {
             if (mode == Mode.Interactive)
                 System.out.print("... ");
-            String line = br.readLine() + "\n";
-            code += line;
+            String line = br.readLine();
+            if (line == null)
+                break;
+            code += line + "\n";
             paren += parenCount(line);
         }
 
