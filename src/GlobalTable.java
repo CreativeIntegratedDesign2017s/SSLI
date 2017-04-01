@@ -65,11 +65,6 @@ class GlobalTable {
         return (a == null) ? "void" : a.stream().map(Parameter::getTypeStr).collect(Collectors.joining(","));
     }
 
-    private static void scpException(String msg) {
-        System.out.println(msg);
-        throw new RuntimeException();
-    }
-
     /* Fields variables */
     HashMap<String,Type> types;
     HashMap<String, Variable> vars;
@@ -131,11 +126,11 @@ class GlobalTable {
     void declVar(String name, SimpleParser.TypeContext typeCtx) {
 
         if (vars.get(name) != null || types.get(name) != null || procs.get(name) != null)
-            scpException(name + ": Already defined identifier");
+            throw new RuntimeException(name + ": Already defined identifier");
 
         String type = typeCtx.ID().getText();
         if (types.get(type) == null)
-            scpException(type + ": Undeclared type");
+            throw new RuntimeException(type + ": Undeclared type");
 
         vars.put(name, new Variable(type, (typeCtx.getChildCount() - 1) / 3, false));
         _varClearList.add(name);
@@ -144,12 +139,12 @@ class GlobalTable {
     void declEnum(String name, SimpleParser.Enum_listContext enumCtx) {
 
         if (vars.get(name) != null || types.get(name) != null || procs.get(name) != null)
-            scpException(name + ": Already defined identifier");
+            throw new RuntimeException(name + ": Already defined identifier");
 
         for (int i = 0; i < (enumCtx.getChildCount() + 1) / 2; i++) {
             String vid = enumCtx.ID(i).getText();
             if (vars.get(vid) != null || types.get(vid) != null || procs.get(vid) != null)
-                scpException(vid + ": Already defined identifier");
+                throw new RuntimeException(vid + ": Already defined identifier");
         }
 
         types.put(name, new Type(true, null));
@@ -164,10 +159,10 @@ class GlobalTable {
     void declProc(String name, SimpleParser.Para_listContext paraCtx, String rtype) {
 
         if (vars.get(name) != null || (types.get(name) != null && !rtype.equals(name)))
-            scpException(name + ": Already defined identifier");
+            throw new RuntimeException(name + ": Already defined identifier");
 
         if (types.get(rtype) == null && !rtype.equals("void"))
-            scpException(rtype + ": Undeclared type");
+            throw new RuntimeException(rtype + ": Undeclared type");
 
         Procedure proc = new Procedure();
         proc.rtype = rtype;
@@ -190,7 +185,7 @@ class GlobalTable {
                 if (paramListEq(item.param, proc.param))
                     isDup = true;
             if (isDup)
-                scpException(name + ": Already defined identifier");
+                throw new RuntimeException(name + ": Already defined identifier");
         }
         else {
             loads = new LinkedList<>();

@@ -18,11 +18,6 @@ class LocalTable {
         }
     }
 
-    private static void scpException(String msg) {
-        System.out.println(msg);
-        throw new RuntimeException();
-    }
-
     HashMap<String, Variable> vars;
     private String scpName;
     private int scpDepth;
@@ -55,11 +50,11 @@ class LocalTable {
     void declVar(String name, SimpleParser.TypeContext typeCtx) {
 
         if (vars.get(name) != null || global.types.get(name) != null || global.procs.get(name) != null)
-            scpException(name + ": Already defined identifier");
+            throw new RuntimeException(name + ": Already defined identifier");
 
         String type = typeCtx.ID().getText();
         if (global.types.get(type) == null)
-            scpException(type + ": Undeclared type");
+            throw new RuntimeException(type + ": Undeclared type");
 
         vars.put(name, new Variable(
                 type,
@@ -70,11 +65,11 @@ class LocalTable {
     void declVar(String name, SimpleParser.PtypeContext typeCtx) {
 
         if (vars.get(name) != null || global.types.get(name) != null || global.procs.get(name) != null)
-            scpException(name + ": Already defined identifier");
+            throw new RuntimeException(name + ": Already defined identifier");
 
         String type = typeCtx.ID().getText();
         if (global.types.get(type) == null)
-            scpException(type + ": Undeclared type");
+            throw new RuntimeException(type + ": Undeclared type");
 
         vars.put(name, new Variable(
                 type,

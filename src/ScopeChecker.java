@@ -3,11 +3,6 @@ import org.antlr.v4.runtime.tree.*;
 
 public class ScopeChecker extends SimpleParserBaseListener {
 
-    private static void scpException(String msg) {
-        System.out.println(msg);
-        throw new RuntimeException();
-    }
-
     /* Global table has global variables, types and procs.
      * Local tables have local variables for its proc or a block.
      * And each context has its scope. If it is not designated,
@@ -80,11 +75,11 @@ public class ScopeChecker extends SimpleParserBaseListener {
         String vid = ctx.getText();
         if (current == null) {
             if (!global.isTypedID(vid))
-                scpException(vid + ": Undeclared Identifier");
+                throw new RuntimeException(vid + ": Undeclared Identifier");
         }
         else {
             if (!current.isTypedID(vid))
-                scpException(vid + ": Undeclared Identifier");
+                throw new RuntimeException(vid + ": Undeclared Identifier");
             scope.put(ctx, current);
         }
     }

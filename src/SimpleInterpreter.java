@@ -75,21 +75,21 @@ public class SimpleInterpreter {
     /* Main */
     static public void main(String args[]) throws IOException {
 
-        ModeConfiguration mc = new ModeConfiguration(args);
-        InputStream is = (mc.inOpt) ? (new FileInputStream(mc.inFile)) : (System.in);
+        ModeConfiguration config = new ModeConfiguration(args);
+        InputStream is = (config.inOpt) ? (new FileInputStream(config.inFile)) : (System.in);
         CodeReader cr = new CodeReader(is);
 
         GlobalTable symbols = new GlobalTable();
 
         String code = cr.readCodes();
         while (code != null) {
-            InterpretProgramViaStream(symbols, code);
+            InterpretProgramViaStream(code, symbols, config);
             code = cr.readCodes();
         }
     }
 
     /* Core Loop */
-    static private void InterpretProgramViaStream(GlobalTable symbols, String code) throws IOException {
+    static private void InterpretProgramViaStream(String code, GlobalTable symbols, ModeConfiguration config) throws IOException {
 
         // Build Lexer & Parser
         ANTLRInputStream input = new ANTLRInputStream(code);
@@ -99,29 +99,46 @@ public class SimpleInterpreter {
 
         // Set Error Listener & Strategy
         parser.removeErrorListeners();
-        parser.addErrorListener(new ErrorListener());
+        parser.addErrorListener(new ErrorListener(!config.inOpt));
         parser.setErrorHandler(new ErrorStrategy());
 
         // Build Parse Tree
         ParseTree tree;
         try { tree = parser.prgm(); }
-        catch (Exception e) { return; }
+        catch (Exception e) {
+            if (config.inOpt) System.exit(-1);
+            return;
+        }
 
         // Check Scope Consistency
         ScopeChecker scpChecker = new ScopeChecker(symbols);
         ParseTreeWalker walker = new ParseTreeWalker();
         try { walker.walk(scpChecker, tree); }
-        catch (Exception e) {
+        catch (RuntimeException e) {
             symbols.clear();
-            return;
+            if (config.inOpt) {
+                System.err.println(e.getMessage());
+                System.exit(-1);
+            }
+            else {
+                System.out.println(e.getMessage());
+                return;
+            }
         }
 
         // Check Type Consistency
         TypeChecker typeChecker = new TypeChecker(scpChecker.global, scpChecker.scope);
         try { typeChecker.visit(tree); }
-        catch (Exception e) {
+        catch (RuntimeException e) {
             symbols.clear();
-            return;
+            if (config.inOpt) {
+                System.err.println(e.getMessage());
+                System.exit(-1);
+            }
+            else {
+                System.out.println(e.getMessage());
+                return;
+            }
         }
 
         // Declarations Confirmed
