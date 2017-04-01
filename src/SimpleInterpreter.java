@@ -41,12 +41,23 @@ public class SimpleInterpreter {
         }
 
         private int parenCount(String line) {
+            if (line == null) return 0;
+
             int paren = 0;
-            for (int i = 0; i < line.length(); i++) {
-                switch (line.charAt(i)) {
-                    case '(': case '{': case '[':
+            ANTLRInputStream input = new ANTLRInputStream(line);
+            SimpleLexer lexer = new SimpleLexer(input);
+            for (Token t : lexer.getAllTokens()) {
+                switch (t.getType()) {
+                    case SimpleLexer.LRB:
+                    case SimpleLexer.LCB:
+                    case SimpleLexer.LSB:
+                    case SimpleLexer.IF:
+                    case SimpleLexer.WHILE:
                         paren += 1; break;
-                    case ')': case '}': case ']':
+                    case SimpleLexer.RRB:
+                    case SimpleLexer.RCB:
+                    case SimpleLexer.RSB:
+                    case SimpleLexer.END:
                         paren -= 1; break;
                 }
             }
@@ -57,8 +68,6 @@ public class SimpleInterpreter {
             if (interactive) System.out.print(">>> ");
 
             String code = readLine();
-            if (code == null) return null;
-
             int paren = parenCount(code);
             while (paren > 0) {
                 String line = readLine();
@@ -67,7 +76,6 @@ public class SimpleInterpreter {
                 code += "\n" + line;
                 paren += parenCount(line);
             }
-
             return code;
         }
     }
