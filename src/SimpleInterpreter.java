@@ -37,7 +37,7 @@ public class SimpleInterpreter {
 
         CodeReader(InputStream is) {
             super(new InputStreamReader(is));
-            interactive =  (is == System.in);
+            interactive = (is == System.in);
         }
 
         private int parenCount(String line) {

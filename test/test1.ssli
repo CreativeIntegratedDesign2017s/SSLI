@@ -1,0 +1,20 @@
+// swap()
+void swap(int& a, int& b) {
+    int t = a;
+    a = b;
+    b = t;
+}
+
+// main()
+int a = 3;
+int b = 6;
+
+print("Before swap");
+print(a);
+print(b);
+
+swap(a, b);
+
+print("After swap");
+print(a);
+print(b);
