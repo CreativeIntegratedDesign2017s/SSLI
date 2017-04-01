@@ -73,8 +73,9 @@ public class SimpleInterpreter {
             while (paren > 0) {
                 String line = readLine();
                 if (line == null) break;
+                else line += "\n";
 
-                code += line + "\n";
+                code += line;
                 paren += parenCount(line);
             }
             return code;
