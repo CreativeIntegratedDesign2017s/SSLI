@@ -1,58 +1,95 @@
-/**
- * Created by HeeM on 2017-03-13.
- * Simply implemented for System.in by Holim on 2017-03-13.
- * Interactive Mode with parentheses-matcher by Holim on 2017-03-19.
- * Bail-out Error Reporting & Scope Checker by Holim on 2017-03-22.
- */
-
 import java.io.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.apache.commons.cli.*;
 
 public class SimpleInterpreter {
-    private static int parenCount(String line) {
-        int paren = 0;
-        for (int i = 0; i < line.length(); i++) {
-            switch (line.charAt(i)) {
-                case '(': case '{': case '[':
-                    paren += 1; break;
-                case ')': case '}': case ']':
-                    paren -= 1; break;
+
+    static class ModeConfiguration {
+        boolean inOpt;
+        boolean outOpt;
+        String inFile;
+        String outFile;
+
+        ModeConfiguration(String args[]) {
+            Options options = new Options();
+            options.addOption(new Option("f", true, "input file"));
+            options.addOption(new Option("o", true, "output file"));
+            try {
+                CommandLineParser parser = new DefaultParser();
+                CommandLine cmd = parser.parse(options, args);
+                inOpt = cmd.hasOption("f");
+                inFile = cmd.getOptionValue("f");
+                outOpt = cmd.hasOption("o");
+                outFile = cmd.getOptionValue("o");
+            }
+            catch (ParseException e) {
+                System.err.println(e.getMessage());
+                HelpFormatter formatter = new HelpFormatter();
+                formatter.printHelp("ssli", options);
+                System.exit(-1);
             }
         }
-        return paren;
     }
 
-    static public void main(String args[]) throws IOException {
-        ModeConfiguration mc = ParsingMode(args);
+    static class CodeReader extends BufferedReader {
+        private boolean interactive;
 
-        System.out.println("Welcome to Simple Interpreter!");
-        BufferedReader br = mc.QueryInputStream();
+        CodeReader(InputStream is) {
+            super(new InputStreamReader(is));
+            interactive =  (is == System.in);
+        }
+
+        private int parenCount(String line) {
+            int paren = 0;
+            for (int i = 0; i < line.length(); i++) {
+                switch (line.charAt(i)) {
+                    case '(': case '{': case '[':
+                        paren += 1; break;
+                    case ')': case '}': case ']':
+                        paren -= 1; break;
+                }
+            }
+            return paren;
+        }
+
+        String readCodes() throws IOException {
+            if (interactive) System.out.print(">>> ");
+
+            String code = readLine();
+            if (code == null) return null;
+
+            int paren = parenCount(code);
+            while (paren > 0) {
+                String line = readLine();
+                if (line == null) break;
+
+                code += "\n" + line;
+                paren += parenCount(line);
+            }
+
+            return code;
+        }
+    }
+
+    /* Main */
+    static public void main(String args[]) throws IOException {
+
+        ModeConfiguration mc = new ModeConfiguration(args);
+        InputStream is = (mc.inOpt) ? (new FileInputStream(mc.inFile)) : (System.in);
+        CodeReader cr = new CodeReader(is);
+
         GlobalTable symbols = new GlobalTable();
 
-        while (InterpretProgramViaStream(br, symbols, mc.mode)){}
+        String code = cr.readCodes();
+        while (code != null) {
+            InterpretProgramViaStream(symbols, code);
+            code = cr.readCodes();
+        }
     }
 
-    private static boolean InterpretProgramViaStream(BufferedReader br, GlobalTable symbols, Mode mode) throws IOException {
-        if (mode == Mode.Interactive)
-            System.out.print(">>> ");
-        String code = br.readLine();
-        if (code == null)
-            return false;
-        code += "\n";
-
-        // Match #.brackets in input codes
-        int paren = parenCount(code);
-        while (paren > 0) {
-            if (mode == Mode.Interactive)
-                System.out.print("... ");
-            String line = br.readLine();
-            if (line == null)
-                break;
-            code += line + "\n";
-            paren += parenCount(line);
-        }
+    /* Core Loop */
+    static private void InterpretProgramViaStream(GlobalTable symbols, String code) throws IOException {
 
         // Build Lexer & Parser
         ANTLRInputStream input = new ANTLRInputStream(code);
@@ -68,9 +105,7 @@ public class SimpleInterpreter {
         // Build Parse Tree
         ParseTree tree;
         try { tree = parser.prgm(); }
-        catch (Exception e) {
-            return true;
-        }
+        catch (Exception e) { return; }
 
         // Check Scope Consistency
         ScopeChecker scpChecker = new ScopeChecker(symbols);
@@ -78,7 +113,7 @@ public class SimpleInterpreter {
         try { walker.walk(scpChecker, tree); }
         catch (Exception e) {
             symbols.clear();
-            return true;
+            return;
         }
 
         // Check Type Consistency
@@ -86,7 +121,7 @@ public class SimpleInterpreter {
         try { typeChecker.visit(tree); }
         catch (Exception e) {
             symbols.clear();
-            return true;
+            return;
         }
 
         // Declarations Confirmed
@@ -97,59 +132,6 @@ public class SimpleInterpreter {
         System.out.println("Tree: " + tree.toStringTree(parser));
 
         // TODO: Execute the Code
-        return true;
     }
 
-    enum Mode {
-        Interactive,
-        FileInput
-    }
-
-    static class ModeConfiguration {
-        Mode mode;
-        String inputFile;
-
-        BufferedReader QueryInputStream() {
-            switch (mode) {
-                case Interactive:
-                    return new BufferedReader(new InputStreamReader(System.in));
-                case FileInput:
-                    try {
-                        InputStream is = new FileInputStream(inputFile);
-                        return new BufferedReader(new InputStreamReader(is));
-                    } catch (java.io.FileNotFoundException e) {
-                        return null;
-                    }
-                default:
-                    return null;
-            }
-        }
-    }
-
-    static private ModeConfiguration ParsingMode(String args[]) {
-        Options options = new Options();
-
-        Option output = new Option("f", "file", true, "file input");
-        options.addOption(output);
-
-        CommandLineParser parser = new DefaultParser();
-        HelpFormatter formatter = new HelpFormatter();
-        CommandLine cmd;
-
-        try {
-            cmd = parser.parse(options, args);
-        } catch (ParseException e) {
-            System.out.println(e.getMessage());
-            formatter.printHelp("utility-name", options);
-
-            System.exit(1);
-            return new ModeConfiguration();
-        }
-
-        ModeConfiguration mc = new ModeConfiguration();
-        mc.mode = cmd.hasOption("file") ? Mode.FileInput : Mode.Interactive;
-        if (mc.mode == Mode.FileInput)
-            mc.inputFile = cmd.getOptionValue("file");
-        return mc;
-    }
 }
