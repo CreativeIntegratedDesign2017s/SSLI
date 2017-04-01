@@ -2,7 +2,6 @@ lexer grammar SimpleLexer;
 
 /* Comments */
 SLC :	'//' .*? '\n' -> skip ;
-MLC :	'/*' .*? '*/' -> skip ;
 
 /* Symbols */
 LRB :	'(' ;
