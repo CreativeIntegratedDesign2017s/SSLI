@@ -107,17 +107,22 @@ public class SimpleInterpreter {
         CommonTokenStream tokens = new CommonTokenStream(lexer);
         SimpleParser parser = new SimpleParser(tokens);
 
-        // Set Error Listener & Strategy
+        // Set Simple Error Listener
         parser.removeErrorListeners();
-        parser.addErrorListener(new ErrorListener(!config.inOpt));
-        parser.setErrorHandler(new ErrorStrategy());
+        parser.addErrorListener(new ErrorListener());
 
         // Build Parse Tree
-        ParseTree tree;
+        ParseTree tree = null;
         try { tree = parser.prgm(); }
-        catch (Exception e) {
-            if (config.inOpt) System.exit(-1);
-            return;
+        catch (RuntimeException e) {
+            if (config.inOpt) {
+                System.err.println(e.getMessage());
+                System.exit(-1);
+            }
+            else {
+                System.out.println(e.getMessage());
+                return;
+            }
         }
 
         // Check Scope Consistency
