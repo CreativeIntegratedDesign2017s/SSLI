@@ -41,8 +41,6 @@ public class SimpleInterpreter {
         }
 
         private int parenCount(String line) {
-            if (line == null) return 0;
-
             int paren = 0;
             ANTLRInputStream input = new ANTLRInputStream(line);
             SimpleLexer lexer = new SimpleLexer(input);
@@ -68,12 +66,15 @@ public class SimpleInterpreter {
             if (interactive) System.out.print(">>> ");
 
             String code = readLine();
+            if (code == null) return null;
+            else code += "\n";
+
             int paren = parenCount(code);
             while (paren > 0) {
                 String line = readLine();
                 if (line == null) break;
 
-                code += "\n" + line;
+                code += line + "\n";
                 paren += parenCount(line);
             }
             return code;
