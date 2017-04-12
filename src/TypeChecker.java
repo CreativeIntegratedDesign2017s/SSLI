@@ -6,8 +6,11 @@ class TypeChecker extends SimpleParserBaseVisitor<Integer> {
     ParseTreeProperty<LocalTable> scope;
 
     /* Constructor */
+    /*
     TypeChecker(GlobalTable _global, ParseTreeProperty<LocalTable> _scope) {
         global = _global;
         scope = _scope;
     }
+    */
+
 }

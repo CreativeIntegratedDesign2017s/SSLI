@@ -65,20 +65,22 @@ public class SimpleInterpreter {
         String readCodes() throws IOException {
             if (interactive) System.out.print(">>> ");
 
-            String code = readLine();
-            if (code == null) return null;
-            else code += "\n";
+            String line = readLine();
+            if (line == null) return null;
 
-            int paren = parenCount(code);
+            StringBuilder code = new StringBuilder(line);
+            code.append("\n");
+
+            int paren = parenCount(code.toString());
             while (paren > 0) {
-                String line = readLine();
-                if (line == null) break;
-                else line += "\n";
+                String appendLine = readLine();
+                if (appendLine == null) break;
+                else appendLine += "\n";
 
-                code += line;
+                code.append(appendLine);
                 paren += parenCount(line);
             }
-            return code;
+            return code.toString();
         }
     }
 
@@ -89,17 +91,17 @@ public class SimpleInterpreter {
         InputStream is = (config.inOpt) ? (new FileInputStream(config.inFile)) : (System.in);
         CodeReader cr = new CodeReader(is);
 
-        GlobalTable symbols = new GlobalTable();
+        SymbolTable symTable = new SymbolTable();
 
         String code = cr.readCodes();
         while (code != null) {
-            InterpretProgramViaStream(code, symbols, config);
+            InterpretProgramViaStream(code, symTable, config);
             code = cr.readCodes();
         }
     }
 
     /* Core Loop */
-    static private void InterpretProgramViaStream(String code, GlobalTable symbols, ModeConfiguration config) throws IOException {
+    static private void InterpretProgramViaStream(String code, SymbolTable symTable, ModeConfiguration config) throws IOException {
 
         // Build Lexer & Parser
         ANTLRInputStream input = new ANTLRInputStream(code);
@@ -126,11 +128,11 @@ public class SimpleInterpreter {
         }
 
         // Check Scope Consistency
-        ScopeChecker scpChecker = new ScopeChecker(symbols);
+        ScopeChecker scpChecker = new ScopeChecker(symTable);
         ParseTreeWalker walker = new ParseTreeWalker();
         try { walker.walk(scpChecker, tree); }
         catch (RuntimeException e) {
-            symbols.clear();
+            symTable.clear();
             if (config.inOpt) {
                 System.err.println(e.getMessage());
                 System.exit(-1);
@@ -142,10 +144,10 @@ public class SimpleInterpreter {
         }
 
         // Check Type Consistency
-        TypeChecker typeChecker = new TypeChecker(scpChecker.global, scpChecker.scope);
+        TypeChecker typeChecker = new TypeChecker();
         try { typeChecker.visit(tree); }
         catch (RuntimeException e) {
-            symbols.clear();
+            symTable.clear();
             if (config.inOpt) {
                 System.err.println(e.getMessage());
                 System.exit(-1);
@@ -157,8 +159,8 @@ public class SimpleInterpreter {
         }
 
         // Declarations Confirmed
-        symbols.commit();
-        symbols.print();
+        symTable.commit();
+        symTable.print();
 
         // TODO: Make AST & IR Codes
         System.out.println("Tree: " + tree.toStringTree(parser));
