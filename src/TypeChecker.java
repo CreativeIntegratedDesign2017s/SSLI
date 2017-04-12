@@ -67,7 +67,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Integer> {
     }
 
     @Override
-    public Integer visitNested(SimpleParser.NestedContext ctx) {
+    public Integer visitStmt_list(SimpleParser.Stmt_listContext ctx) {
         symTable.enterNewScope();
 
         Integer result = visitChildren(ctx);
