@@ -5,6 +5,12 @@ void swap(int& a, int& b) {
     b = t;
 }
 
+void swap(str& a, str& b) {
+    str t = a;
+    a = b;
+    b = t;
+}
+
 // main()
 int a = 3;
 int b = 6;

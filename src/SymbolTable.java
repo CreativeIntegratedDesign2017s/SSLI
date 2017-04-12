@@ -87,7 +87,7 @@ class SymbolTable {
                 // 프로시저 이외에는 확장금지
                 return false;
             }
-            if (returnType != ps.returnType)
+            if (!returnType.equals(ps.returnType))
                 return false;   // 리턴이 다른 함수 오버로딩 허용 안함
 
             List<Expression> newParams = ps.possibleParams.get(0);  // Extend에 들어오는 프로시저 심볼은 단 하나의 파라미터 셋을 보유해야함
@@ -102,13 +102,13 @@ class SymbolTable {
         }
         public String toString() {
             // ((int, int[]) -> str
-            return "(" + String.join(":", possibleParams.stream().map(params ->
+            return (possibleParams.size() > 1 ? "{\n- [" : "[") + String.join("]\n- [", possibleParams.stream().map(params ->
             {
                 List<String> paramStrings = params.stream().map(Expression::toString)
                         .collect(Collectors.toList());
                 String paramStr = String.join(",", paramStrings);
                 return String.format("(%s) -> %s", paramStr, returnType);
-            }).collect(Collectors.toList())) + ")";
+            }).collect(Collectors.toList())) + (possibleParams.size() > 1 ? "]\n}" : "]");
         }
     }
 
@@ -289,7 +289,7 @@ class SymbolTable {
     void print() {
         System.out.println("---types---");
         typeMap.forEach((typeName, typeObject) ->
-                System.out.println(typeObject.getClassType().toString() + ": " + typeObject.toString()));
+                System.out.println(typeObject.toString() + ": " + typeObject.getClassType().toString()));
         for (Scope scope : scopeStack) {
             scope.print();
         }
