@@ -33,24 +33,12 @@ public class ScopeChecker extends SimpleParserBaseListener {
         }
         symTable.declareProcedure(ctx.ID().getText(), rType, paramTypes);
         symTable.enterNewScope();
-
-        /*
-        global.declProc(ctx.ID().getText(),		// Proc ID
-                ctx.para_list(),				// Proc parameters
-                ctx.rtype().getText());			// Proc return
-        current = new LocalTable(ctx.ID().getText(), global);
-        */
     }
 
     @Override
     public void exitProcedure(SimpleParser.ProcedureContext ctx) {
         symTable.print();
         symTable.leaveScope();
-
-        /*
-        current.print();
-        current = null;
-        */
     }
 
     @Override
@@ -60,48 +48,23 @@ public class ScopeChecker extends SimpleParserBaseListener {
             SimpleParser.PtypeContext typeCtx = ctx.ptype(i);
             symTable.declareVariable(ctx.ID(i).getText(),
                     new SymbolTable.ValueExpr(typeCtx.ID().getText(), (typeCtx.getChildCount() - 1) / 3));
-            //current.declVar(ctx.ID(i).getText(), ctx.ptype(i));
         }
     }
 
     @Override
-    public void enterEnumerate(SimpleParser.EnumerateContext ctx) {
-        String name = ctx.ID().getText();
-        SimpleParser.Enum_listContext enumCtx = ctx.enum_list();
-
-        symTable.declareEnum(name, enumCtx.ID().stream().map(TerminalNode::getText)
-                                                        .collect(Collectors.toList()));
-
-        //global.declEnum(ctx.ID().getText(), ctx.enum_list());
-    }
-
-    @Override
     public void exitDeclare(SimpleParser.DeclareContext ctx) {
-        /*
-        if (current == null)
-            global.declVar(ctx.ID().getText(), ctx.type());
-        else
-            current.declVar(ctx.ID().getText(), ctx.type());
-        */
         SimpleParser.TypeContext typeCtx = ctx.type();
         symTable.declareVariable(ctx.ID().getText(),
                 new SymbolTable.ValueExpr(typeCtx.ID().getText(), (typeCtx.getChildCount() - 1) / 3));
     }
 
     @Override
-    public void enterNested(SimpleParser.NestedContext ctx) {
+    public void enterStmt_list(SimpleParser.Stmt_listContext ctx) {
         symTable.enterNewScope();
-        /*
-        scpStack.push(current);
-        if (current == null)
-            current = new LocalTable("Nested", global);
-        else
-            current = new LocalTable(current);
-        */
     }
 
     @Override
-    public void exitNested(SimpleParser.NestedContext ctx) {
+    public void exitStmt_list(SimpleParser.Stmt_listContext ctx) {
         symTable.print();
         symTable.leaveScope();
     }

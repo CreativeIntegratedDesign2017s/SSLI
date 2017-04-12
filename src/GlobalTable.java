@@ -136,26 +136,6 @@ class GlobalTable {
         _varClearList.add(name);
     }
 
-    void declEnum(String name, SimpleParser.Enum_listContext enumCtx) {
-
-        if (vars.get(name) != null || types.get(name) != null || procs.get(name) != null)
-            throw new RuntimeException(name + ": Already defined identifier");
-
-        for (int i = 0; i < (enumCtx.getChildCount() + 1) / 2; i++) {
-            String vid = enumCtx.ID(i).getText();
-            if (vars.get(vid) != null || types.get(vid) != null || procs.get(vid) != null)
-                throw new RuntimeException(vid + ": Already defined identifier");
-        }
-
-        types.put(name, new Type(true, null));
-        _typeClearList.add(name);
-        for (int i = 0; i < (enumCtx.getChildCount() + 1) / 2; i++) {
-            String vid = enumCtx.ID(i).getText();
-            vars.put(vid, new Variable(name, 0, true));
-            _varClearList.add(vid);
-        }
-    }
-
     void declProc(String name, SimpleParser.Para_listContext paraCtx, String rtype) {
 
         if (vars.get(name) != null || (types.get(name) != null && !rtype.equals(name)))

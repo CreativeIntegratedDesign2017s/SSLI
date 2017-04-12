@@ -39,7 +39,6 @@ class SymbolTable {
     }
     public interface Symbol {
         Expression getExpression();
-        boolean allowLocalDeclaration();
         boolean extend(Symbol s);
     }
 
@@ -50,9 +49,6 @@ class SymbolTable {
         }
         public Expression getExpression() {
             return expr;
-        }
-        public boolean allowLocalDeclaration() {
-            return true;
         }
         public boolean extend(Symbol ext) {
             // not support
@@ -74,9 +70,6 @@ class SymbolTable {
 
         public Expression getExpression() {
             return returnType;
-        }
-        public boolean allowLocalDeclaration() {
-            return false;
         }
         public boolean extend(Symbol ext) {
             Procedure ps;
@@ -211,10 +204,6 @@ class SymbolTable {
         declareType(new Primitive(name));
     }
 
-    void declareEnum(String name, List<String> candidates) {
-        declareType(new Enum(name, candidates));
-    }
-
     void declareAlias(String name, String target) {
         TypeObject base = getTypeObject(target);
         if (base == null)
@@ -226,11 +215,6 @@ class SymbolTable {
 
     private void declareSymbol(String symbolName, Symbol s){
         Scope current = scopeStack.peek();
-        if (!(current instanceof GlobalScope) && !s.allowLocalDeclaration()) {
-            throw new RuntimeException(String.format(
-                    "%s symbol can't declared because %s type is not allowed from local scope", symbolName, s
-            ));
-        }
         Symbol prevDecl = current.get(symbolName);
         if (prevDecl != null) {
             if (!prevDecl.extend(s)) {

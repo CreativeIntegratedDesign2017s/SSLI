@@ -1,11 +1,10 @@
 import java.util.List;
 
-public abstract class TypeObject {
+abstract class TypeObject {
     enum Class {
         Unbound,
+        Alias,
         Primitive,
-        Enum,
-        Alias
     }
     String name;
     abstract Class getClassType();
@@ -23,7 +22,7 @@ class Unbound extends TypeObject {
     public Unbound(String rawExpression) {
         rawExpr = rawExpression;
     }
-    String rawExpr;
+    private String rawExpr;
 }
 
 class Primitive extends TypeObject {
@@ -32,35 +31,12 @@ class Primitive extends TypeObject {
     @Override
     public String getTypeName() { return name; }
 
-    public Primitive(String typeName) {
+    Primitive(String typeName) {
         name = typeName;
     }
     @Override
     public String toString() {
         return String.format("%s", name);
-    }
-}
-
-class Enum extends TypeObject {
-    private List<String> candidates;
-
-    @Override
-    public Class getClassType() {
-        return Class.Enum;
-    }
-
-    @Override
-    public String getTypeName() {
-        return name;
-    }
-
-    public Enum(String typeName, List<String> _candidates) {
-        name = typeName;
-        candidates = _candidates;
-    }
-
-    public String toString() {
-        return name;
     }
 }
 
@@ -71,7 +47,7 @@ class Alias extends TypeObject {
     @Override
     public String getTypeName() { return name; }
 
-    public Alias(String typeName, TypeObject b) {
+    Alias(String typeName, TypeObject b) {
         name = typeName;
         base = b;
     }
