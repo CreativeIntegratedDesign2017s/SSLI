@@ -120,31 +120,14 @@ public class SimpleInterpreter {
             if (config.inOpt) {
                 System.err.println(e.getMessage());
                 System.exit(-1);
-            }
-            else {
-                System.out.println(e.getMessage());
-                return;
-            }
-        }
-
-        // Check Scope Consistency
-        ScopeChecker scpChecker = new ScopeChecker(symTable);
-        ParseTreeWalker walker = new ParseTreeWalker();
-        try { walker.walk(scpChecker, tree); }
-        catch (RuntimeException e) {
-            symTable.clear();
-            if (config.inOpt) {
-                System.err.println(e.getMessage());
-                System.exit(-1);
-            }
-            else {
+            } else {
                 System.out.println(e.getMessage());
                 return;
             }
         }
 
         // Check Type Consistency
-        TypeChecker typeChecker = new TypeChecker();
+        TypeChecker typeChecker = new TypeChecker(symTable);
         try { typeChecker.visit(tree); }
         catch (RuntimeException e) {
             symTable.clear();
