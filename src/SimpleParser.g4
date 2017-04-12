@@ -4,20 +4,22 @@ prgm:	unit* ;
 
 /* Interpretation Unit */
 unit:	stmt								# Statement
-    |	rtype ID '(' para_list ')' stmt		# Procedure
-    |	ENUM ID '{' enum_list '}'			# Enumerate
+    |	rtype ID '(' para_list ')' block	# Procedure
     |	IMPORT STR ';'						# Import
     ;
 
+block: '{' stmt_list '}' ;
+stmt_list: stmt*;
+
 /* Statements */
-stmt:	expr? ';'							# Evaluate
-    |	type ID init ';'					# Declare
-    |	expr '=' expr ';'					# Assign
-    |	IF expr THEN stmt (ELSE stmt)? END	# IfElse
-    |	DO stmt WHILE expr END				# DoWhile
-    |	WHILE expr DO stmt END				# WhileDo
-    |	RETURN expr? ';'					# Return
-    |	'{' stmt* '}'						# Nested
+stmt:	expr? ';'							            # Evaluate
+    |	type ID init ';'					            # Declare
+    |	expr '=' expr ';'					            # Assign
+    |	IF expr THEN stmt_list (ELSE stmt_list)? END	# IfElse
+    |	DO stmt_list WHILE expr END				        # DoWhile
+    |	WHILE expr DO stmt_list END				        # WhileDo
+    |	RETURN expr? ';'					            # Return
+    |   block                                           # Nested
     ;
 
 /* Expressions */
@@ -40,7 +42,6 @@ expr:	ID									# Identifier
     ;
 
 // type declaration subrules
-enum_list: ID (',' ID)* ;
 
 // variable declararation subrules
 type:	ID ('[' INT ']')* ;

@@ -11,6 +11,11 @@ void swap(str& a, str& b) {
     b = t;
 }
 
+void test()
+{
+    swap(1, 2);
+}
+
 // main()
 int a = 3;
 int b = 6;
