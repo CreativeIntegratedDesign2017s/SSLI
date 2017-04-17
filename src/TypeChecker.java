@@ -7,10 +7,12 @@ import java.util.stream.Collectors;
 class TypeChecker extends SimpleParserBaseVisitor<Integer> {
 
     SymbolTable symTable;
+    ParseTreeProperty<SymbolTable.Expression> nodeExpression;
 
     /* Constructor */
     TypeChecker(SymbolTable _symTable) {
         symTable = _symTable;
+        nodeExpression = new ParseTreeProperty<>();
     }
 
     @Override
@@ -75,5 +77,16 @@ class TypeChecker extends SimpleParserBaseVisitor<Integer> {
         symTable.print();
         symTable.leaveScope();
         return result;
+    }
+
+    @Override
+    public Integer visitIdentifier(SimpleParser.IdentifierContext ctx) {
+        SymbolTable.Symbol symbol = symTable.getSymbol(ctx.getText());
+        if (symbol == null)
+            throw new RuntimeException("No symbol has found with " + ctx.getText());
+
+        SymbolTable.Expression expr = symbol.getExpression();
+        nodeExpression.put(ctx, expr);
+        return visitChildren(ctx);
     }
 }

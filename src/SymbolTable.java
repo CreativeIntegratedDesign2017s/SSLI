@@ -14,6 +14,7 @@ class SymbolTable {
             dim = dimension;
             isRef = false;
         }
+
         Expression(TypeObject _base, int dimension, boolean isReference) {
             base = _base;
             dim = dimension;
@@ -31,33 +32,40 @@ class SymbolTable {
 
             if (o.getClass() == getClass()) {
                 // 같은 Expression만 비교가능
-                Expression expr = (Expression)o;
+                Expression expr = (Expression) o;
                 return base == expr.base && dim == expr.dim && isRef == expr.isRef;
             }
             return false;
         }
     }
+
     public interface Symbol {
         Expression getExpression();
+
         boolean extend(Symbol s);
     }
 
     static class Variable implements Symbol {
         Expression expr;
+
         Variable(Expression e) {
             expr = e;
         }
+
         public Expression getExpression() {
             return expr;
         }
+
         public boolean extend(Symbol ext) {
             // not support
             return false;
         }
+
         public String toString() {
             return expr.toString();
         }
     }
+
     static class Procedure implements Symbol {
         Procedure(Expression rType, List<Expression> parameterTypes) {
             returnType = rType;
@@ -71,12 +79,12 @@ class SymbolTable {
         public Expression getExpression() {
             return returnType;
         }
+
         public boolean extend(Symbol ext) {
             Procedure ps;
             try {
-                ps = (Procedure)ext;
-            }
-            catch(ClassCastException e) {
+                ps = (Procedure) ext;
+            } catch (ClassCastException e) {
                 // 프로시저 이외에는 확장금지
                 return false;
             }
@@ -93,6 +101,7 @@ class SymbolTable {
             possibleParams.add(newParams);
             return true;
         }
+
         public String toString() {
             // ((int, int[]) -> str
             return (possibleParams.size() > 1 ? "{\n- [" : "[") + String.join("]\n- [", possibleParams.stream().map(params ->
@@ -106,26 +115,34 @@ class SymbolTable {
     }
 
     static class Scope {
-        String getScopeName() { return "local"; }
+        String getScopeName() {
+            return "local";
+        }
+
         private HashMap<String, Symbol> symbolMap = new HashMap<>();
 
         void put(String symbolName, Symbol symbol) {
             symbolMap.put(symbolName, symbol);
         }
+
         Symbol get(String symbolName) {
             return symbolMap.get(symbolName);
         }
+
         void print() {
             System.out.println("---" + getScopeName() + "---");
             symbolMap.forEach((name, symbol) -> System.out.println(String.format("%s: %s", name, symbol)));
         }
     }
+
     static class GlobalScope extends Scope {
         HashMap<String, Symbol> stagedSymbolMap = new HashMap<>();
+
         @Override
         void put(String symbolName, Symbol symbol) {
             stagedSymbolMap.put(symbolName, symbol);
         }
+
         @Override
         Symbol get(String symbolName) {
             Symbol staged = stagedSymbolMap.get(symbolName);
@@ -133,8 +150,12 @@ class SymbolTable {
                 return staged;
             return super.get(symbolName);
         }
+
         @Override
-        String getScopeName() { return "global"; }
+        String getScopeName() {
+            return "global";
+        }
+
         @Override
         void print() {
             super.print();
@@ -146,6 +167,7 @@ class SymbolTable {
             stagedSymbolMap.forEach(super::put);
             stagedSymbolMap.clear();
         }
+
         void clear() {
             stagedSymbolMap.clear();
         }
@@ -162,6 +184,18 @@ class SymbolTable {
         declarePrimitive("str");
         declarePrimitive("int");
         declarePrimitive("bool");
+        declareProcedure("print", new ValueExpr("void", 0),
+                new ArrayList<ParameterExpr>(){{
+                    add(new ParameterExpr("int", 0, false));
+                }});
+        declareProcedure("print", new ValueExpr("void", 0),
+                new ArrayList<ParameterExpr>(){{
+                    add(new ParameterExpr("str", 0, false));
+                }});
+        declareProcedure("print", new ValueExpr("void", 0),
+                new ArrayList<ParameterExpr>(){{
+                    add(new ParameterExpr("bool", 0, false));
+                }});
     }
 
     void enterNewScope() {
@@ -182,14 +216,25 @@ class SymbolTable {
         if (!(current instanceof GlobalScope)) {
             throw new RuntimeException("'commit' called from local scope");
         }
-        ((GlobalScope)current).commit();
+        ((GlobalScope) current).commit();
     }
+
     void clear() {
-        Scope current = scopeStack.peek();
-        if (!(current instanceof GlobalScope)) {
-            throw new RuntimeException("'cancel' called from local scope");
+        while(!scopeStack.empty() && !(scopeStack.peek() instanceof GlobalScope))
+            scopeStack.pop();
+        if (scopeStack.empty()) {
+            throw new RuntimeException("scope stack has broken");
         }
-        ((GlobalScope)current).clear();
+        ((GlobalScope) scopeStack.peek()).clear();
+    }
+
+    Symbol getSymbol(String name) {
+        for (Scope scope : scopeStack) {
+            Symbol sym = scope.get(name);
+            if (sym != null)
+                return sym;
+        }
+        return null;
     }
 
     private TypeObject getTypeObject(String name) {
