@@ -5,10 +5,12 @@ abstract class TypeObject {
         Unbound,
         Alias,
         Primitive,
+        Void,
     }
     String name;
     abstract Class getClassType();
     abstract String getTypeName();
+    abstract boolean writable();
 }
 
 class Unbound extends TypeObject {
@@ -18,6 +20,8 @@ class Unbound extends TypeObject {
     public String getTypeName() { return null; }
     @Override
     public String toString() { return String.format("(unbound:%s)", rawExpr); }
+    @Override
+    public boolean writable() { return false; }
 
     public Unbound(String rawExpression) {
         rawExpr = rawExpression;
@@ -38,6 +42,8 @@ class Primitive extends TypeObject {
     public String toString() {
         return String.format("%s", name);
     }
+    @Override
+    public boolean writable() { return true; }
 }
 
 class Alias extends TypeObject {
@@ -54,4 +60,17 @@ class Alias extends TypeObject {
     public String toString() {
         return String.format("%s(<-%s)", name, base.getTypeName());
     }
+    @Override
+    public boolean writable() { return true; }
+}
+
+class Void extends TypeObject {
+    @Override
+    public Class getClassType() { return Class.Void; }
+    @Override
+    public String getTypeName() { return "void"; }
+    @Override
+    public String toString() { return "void"; }
+    @Override
+    public boolean writable() { return false; }
 }

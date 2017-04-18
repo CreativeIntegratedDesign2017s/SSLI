@@ -180,7 +180,7 @@ class SymbolTable {
         Scope gs = new GlobalScope();
         scopeStack.push(gs);
 
-        declarePrimitive("void");
+        declareType(new Void());
         declarePrimitive("str");
         declarePrimitive("int");
         declarePrimitive("bool");
@@ -294,6 +294,11 @@ class SymbolTable {
         if (to == null)
             throw new RuntimeException(String.format(
                     "No target type named by %s is declared for variable %s", expr.typeName, symbolName));
+
+        // 문법에서 걸리기 void 타입으로 변수를 선언할 수는 없긴함.
+        if (!to.writable())
+            throw new RuntimeException(String.format(
+                    "type %s is not allow to write", to.getTypeName()));
 
         declareSymbol(symbolName, new Variable(new Expression(to, expr.dimension)));
     }
