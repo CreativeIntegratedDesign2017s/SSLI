@@ -13,12 +13,12 @@ void swap(str& a, str& b) {
 
 void test()
 {
-    swap(1, 2);
+    //swap(1, 2);
 }
 
 // main()
-int a = 3;
-int b = 6;
+int a = 7;
+int b = 6 + 3;
 
 print("Before swap");
 print(a);

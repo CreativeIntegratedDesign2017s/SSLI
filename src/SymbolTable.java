@@ -1,116 +1,79 @@
 import javafx.util.Pair;
+import org.antlr.v4.runtime.misc.Triple;
 
 import java.util.*;
 import java.util.stream.Collectors;
 
 class SymbolTable {
-    static class Expression {
-        TypeObject base;
-        int dim;
-        boolean isRef;
+    interface Symbol {
+        boolean isBuiltInSymbol();
+    }
 
-        Expression(TypeObject _base, int dimension) {
-            base = _base;
-            dim = dimension;
-            isRef = false;
-        }
+    static class VarSymbol implements Symbol {
+        ValueType type;
 
-        Expression(TypeObject _base, int dimension, boolean isReference) {
-            base = _base;
-            dim = dimension;
-            isRef = isReference;
+        VarSymbol(ValueType type) {
+            this.type = type;
         }
 
         @Override
         public String toString() {
-            return base.toString() + String.join("", Collections.nCopies(dim, "[]")) + (isRef ? "&" : "");
+            return type.toString();
         }
 
-        @Override
-        public boolean equals(Object o) {
-            if (o == null) return false;
-
-            if (o.getClass() == getClass()) {
-                // 같은 Expression만 비교가능
-                Expression expr = (Expression) o;
-                return base == expr.base && dim == expr.dim && isRef == expr.isRef;
-            }
+        public boolean isBuiltInSymbol() {
             return false;
         }
     }
 
-    public interface Symbol {
-        Expression getExpression();
-
-        boolean extend(Symbol s);
-    }
-
-    static class Variable implements Symbol {
-        Expression expr;
-
-        Variable(Expression e) {
-            expr = e;
+    static class FuncSymbol implements Symbol {
+        FuncSymbol(boolean builtIn) {
+            this.builtIn = builtIn;
+            overloads = new ArrayList<>();
+        }
+        FuncSymbol() {
+            this.builtIn = false;
+            overloads = new ArrayList<>();
         }
 
-        public Expression getExpression() {
-            return expr;
-        }
 
-        public boolean extend(Symbol ext) {
-            // not support
-            return false;
-        }
+        boolean builtIn;
+        List<Function> overloads;
 
-        public String toString() {
-            return expr.toString();
-        }
-    }
-
-    static class Procedure implements Symbol {
-        Procedure(Expression rType, List<Expression> parameterTypes) {
-            returnType = rType;
-            possibleParams = new ArrayList<>();
-            possibleParams.add(parameterTypes);
-        }
-
-        private Expression returnType;
-        private List<List<Expression>> possibleParams;
-
-        public Expression getExpression() {
-            return returnType;
-        }
-
-        public boolean extend(Symbol ext) {
-            Procedure ps;
-            try {
-                ps = (Procedure) ext;
-            } catch (ClassCastException e) {
-                // 프로시저 이외에는 확장금지
-                return false;
+        boolean extend(Function ext) {
+            if (overloads.isEmpty()) {
+                overloads.add(ext);
+                return true;
             }
-            if (!returnType.equals(ps.returnType))
+
+            ValueType rType = overloads.get(0).rType;
+            if (!rType.equals(ext.rType))
                 return false;   // 리턴이 다른 함수 오버로딩 허용 안함
 
-            List<Expression> newParams = ps.possibleParams.get(0);  // Extend에 들어오는 프로시저 심볼은 단 하나의 파라미터 셋을 보유해야함
-            for (List<Expression> params : possibleParams) {
-                if (params.equals(newParams)) {
+            for (Function overload : overloads) {
+                List<ValueType> params = overload.acceptParams;
+                if (params.equals(ext.acceptParams)) {
                     return false;
                 }
             }
 
-            possibleParams.add(newParams);
+            overloads.add(ext);
             return true;
         }
 
         public String toString() {
             // ((int, int[]) -> str
-            return (possibleParams.size() > 1 ? "{\n- [" : "[") + String.join("]\n- [", possibleParams.stream().map(params ->
+            return (overloads.size() > 1 ? "{\n- [" : "[") + String.join("]\n- [", overloads.stream().map(func ->
             {
-                List<String> paramStrings = params.stream().map(Expression::toString)
+                List<String> paramStrings = func.acceptParams.stream().map(ValueType::toString)
                         .collect(Collectors.toList());
                 String paramStr = String.join(",", paramStrings);
-                return String.format("(%s) -> %s", paramStr, returnType);
-            }).collect(Collectors.toList())) + (possibleParams.size() > 1 ? "]\n}" : "]");
+                return String.format("(%s) -> %s", paramStr, func.rType);
+            }).collect(Collectors.toList())) + (overloads.size() > 1 ? "]\n}" : "]");
+        }
+
+        public boolean isBuiltInSymbol() {
+            return builtIn;
         }
     }
 
@@ -131,7 +94,11 @@ class SymbolTable {
 
         void print() {
             System.out.println("---" + getScopeName() + "---");
-            symbolMap.forEach((name, symbol) -> System.out.println(String.format("%s: %s", name, symbol)));
+            symbolMap.forEach((name, symbol) -> {
+                if (symbol.isBuiltInSymbol())
+                    return;
+                System.out.println(String.format("%s: %s", name, symbol));
+            });
         }
     }
 
@@ -173,29 +140,70 @@ class SymbolTable {
         }
     }
 
-    private Stack<Scope> scopeStack = new Stack<>();
-    private Map<String, TypeObject> typeMap = new HashMap<>();
+    private Deque<Scope> scopeStack = new ArrayDeque<>();
+    private Map<String, SingleType> singleTypes = new HashMap<>();
 
     SymbolTable() {
         Scope gs = new GlobalScope();
         scopeStack.push(gs);
 
-        declareType(new Void());
+        declareSingleType("void", new Void());
         declarePrimitive("str");
         declarePrimitive("int");
         declarePrimitive("bool");
-        declareProcedure("print", new ValueExpr("void", 0),
-                new ArrayList<ParameterExpr>(){{
+        declareFunction("print", new ValueExpr("void", 0),
+                new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("int", 0, false));
-                }});
-        declareProcedure("print", new ValueExpr("void", 0),
-                new ArrayList<ParameterExpr>(){{
+                }}, false);
+        declareFunction("print", new ValueExpr("void", 0),
+                new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("str", 0, false));
-                }});
-        declareProcedure("print", new ValueExpr("void", 0),
-                new ArrayList<ParameterExpr>(){{
+                }}, false);
+        declareFunction("print", new ValueExpr("void", 0),
+                new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("bool", 0, false));
-                }});
+                }}, false);
+
+        class OperatorInfo {
+            String name, rType;
+            List<String> args;
+            public OperatorInfo(String name, String rType, String... arguments) {
+                this.name = name;
+                this.rType = rType;
+                args = Arrays.stream(arguments).collect(Collectors.toList());
+            }
+        }
+        List<OperatorInfo> primitiveOperators = new ArrayList<OperatorInfo>() {
+            {
+                // int operators
+                add(new OperatorInfo("unary_plus", "int", "int"));
+                add(new OperatorInfo("unary_minus", "int", "int"));
+                add(new OperatorInfo("binary_plus", "int", "int", "int"));
+                add(new OperatorInfo("binary_minus", "int", "int", "int"));
+                add(new OperatorInfo("binary_div", "int", "int", "int"));
+                add(new OperatorInfo("binary_mult", "int", "int", "int"));
+                add(new OperatorInfo("binary_pow", "int", "int", "int"));
+                add(new OperatorInfo("cmp_lessthan", "bool", "int", "int"));
+                add(new OperatorInfo("cmp_greaterthan", "bool", "int", "int"));
+                add(new OperatorInfo("cmp_equal", "bool", "int", "int"));
+                add(new OperatorInfo("cmp_notequal", "bool", "int", "int"));
+                add(new OperatorInfo("cmp_lessequal", "bool", "int", "int"));
+                add(new OperatorInfo("cmp_greaterequal", "bool", "int", "int"));
+
+                // bool operators
+                add(new OperatorInfo("logical_and", "bool", "bool", "bool"));
+                add(new OperatorInfo("logical_or", "bool", "bool", "bool"));
+                add(new OperatorInfo("logical_not", "bool", "bool", "bool"));
+            }
+        };
+        for (OperatorInfo opInfo : primitiveOperators) {
+            declareFunction("@" + opInfo.name, new ValueExpr(opInfo.rType, 0)
+                    , new ArrayList<ParameterExpr>() {{
+                        for (String paramType : opInfo.args)
+                            add(new ParameterExpr(paramType, 0, false));
+                    }}, true);
+        }
+
     }
 
     void enterNewScope() {
@@ -206,7 +214,7 @@ class SymbolTable {
     void leaveScope() {
         Scope last = scopeStack.peek();
         scopeStack.pop();
-        if (scopeStack.empty()) {   // 스코프 스택이 비면 어떻게 하는가..
+        if (scopeStack.isEmpty()) {   // 스코프 스택이 비면 어떻게 하는가..
             scopeStack.push(last);
         }
     }
@@ -220,9 +228,9 @@ class SymbolTable {
     }
 
     void clear() {
-        while(!scopeStack.empty() && !(scopeStack.peek() instanceof GlobalScope))
+        while (!scopeStack.isEmpty() && !(scopeStack.peek() instanceof GlobalScope))
             scopeStack.pop();
-        if (scopeStack.empty()) {
+        if (scopeStack.isEmpty()) {
             throw new RuntimeException("scope stack has broken");
         }
         ((GlobalScope) scopeStack.peek()).clear();
@@ -237,40 +245,30 @@ class SymbolTable {
         return null;
     }
 
-    private TypeObject getTypeObject(String name) {
-        return typeMap.get(name);
+
+    SingleType getSingleType(String name) {
+        return singleTypes.get(name);
     }
 
-    private void declareType(TypeObject to) {
-        typeMap.put(to.getTypeName(), to);
+    private void declareSingleType(String name, SingleType single) {
+        SingleType prev = singleTypes.get(name);
+        if (prev != null) {
+            throw new RuntimeException(String.format("type %s is already registered in %s", name, prev));
+        }
+        singleTypes.put(name, single);
     }
 
     private void declarePrimitive(String name) {
-        declareType(new Primitive(name));
+        declareSingleType(name, new Primitive(name));
     }
 
     void declareAlias(String name, String target) {
-        TypeObject base = getTypeObject(target);
+        TypeObject base = getSingleType(target);
         if (base == null)
             throw new RuntimeException(String.format(
                     "No target type object named by %s is declared for alias %s", target, name
             ));
-        declareType(new Alias(name, base));
-    }
-
-    private void declareSymbol(String symbolName, Symbol s){
-        Scope current = scopeStack.peek();
-        Symbol prevDecl = current.get(symbolName);
-        if (prevDecl != null) {
-            if (!prevDecl.extend(s)) {
-                throw new RuntimeException(String.format(
-                        "%s symbol is previously declared by %s type", symbolName, prevDecl
-                ));
-            }
-            return;
-        }
-
-        current.put(symbolName, s);
+        declareSingleType(name, new Alias(name, base));
     }
 
     static class ValueExpr {
@@ -288,42 +286,89 @@ class SymbolTable {
             isRef = _isRef;
         }
     }
-    void declareVariable(String symbolName, ValueExpr expr)
+    ValueType MakeArrayOrSingle(SingleType single, int dim) {
+        if (dim > 0)
+            return new Array(single, dim);
+        else
+            return single;
+    }
+    VarSymbol declareVariable(String symbolName, ValueExpr expr)
     {
-        TypeObject to = getTypeObject(expr.typeName);
+        SingleType to = getSingleType(expr.typeName);
         if (to == null)
             throw new RuntimeException(String.format(
                     "No target type named by %s is declared for variable %s", expr.typeName, symbolName));
 
-        // 문법에서 걸리기 void 타입으로 변수를 선언할 수는 없긴함.
+        // 문법에서 걸리기 때문에 void 타입으로 변수를 선언할 수는 없긴함.
         if (!to.writable())
             throw new RuntimeException(String.format(
                     "type %s is not allow to write", to.getTypeName()));
 
-        declareSymbol(symbolName, new Variable(new Expression(to, expr.dimension)));
+        Scope current = scopeStack.peek();
+        Symbol prevDecl = current.get(symbolName);
+        if (prevDecl != null) {
+            throw new RuntimeException(String.format(
+                    "symbol name %s is already defined in this scope", symbolName));
+        }
+        VarSymbol retSymbol = new VarSymbol(MakeArrayOrSingle(to, expr.dimension));
+        current.put(symbolName, retSymbol);
+        return retSymbol;
     }
 
-    void declareProcedure(String symbolName, ValueExpr rExpr, List<ParameterExpr> parameters) {
-        TypeObject rTo = getTypeObject(rExpr.typeName);
+    FuncSymbol declareFunction(String symbolName, ValueExpr rExpr, List<ParameterExpr> parameters, boolean builtIn) {
+        SingleType rTo = getSingleType(rExpr.typeName);
         if (rTo == null)
             throw new RuntimeException(String.format(
                     "No target type named by %s is declared for return type of %s", rExpr.typeName, symbolName));
 
-        List<Expression> paramExpressions = parameters.stream().map(paramExpr -> {
-            TypeObject pTo = getTypeObject(paramExpr.typeName);
+        List<ValueType> paramExpressions = parameters.stream().map(paramExpr -> {
+            SingleType pTo = getSingleType(paramExpr.typeName);
             if (pTo == null)
                 throw new RuntimeException(String.format(
                         "No target type named by %s is declared for parameter of %s", paramExpr.typeName, symbolName));
-            return new Expression(pTo, paramExpr.dimension, paramExpr.isRef);
+
+            ValueType paramType = MakeArrayOrSingle(pTo, paramExpr.dimension);
+            if (paramExpr.isRef)
+                return new Reference(paramType);
+            else
+                return paramType;
         }).collect(Collectors.toList());
 
-        declareSymbol(symbolName, new Procedure(new Expression(rTo, rExpr.dimension), paramExpressions));
+        Function declFunc = new Function(rTo, paramExpressions);
+
+        Scope current = scopeStack.peek();
+        if (!(current instanceof GlobalScope)) {
+            throw new RuntimeException("No procedure declaration is available on local scope");
+        }
+        Symbol prevDecl = current.get(symbolName);
+        if (prevDecl != null) {
+            if (prevDecl instanceof FuncSymbol) {
+                FuncSymbol funcDecl = (FuncSymbol)prevDecl;
+                if (!funcDecl.extend(declFunc)) {
+                    throw new RuntimeException(String.format(
+                            "%s symbol is previously declared by %s type", symbolName, prevDecl
+                    ));
+                }
+                return funcDecl;
+            } else {
+                throw new RuntimeException(
+                        String.format("%s is previously defined by %s symbol", symbolName, prevDecl)
+                );
+            }
+        }
+        FuncSymbol ret = new FuncSymbol(builtIn) {
+            {
+                extend(declFunc);
+            }
+        };
+        current.put(symbolName, ret);
+        return ret;
     }
 
     void print() {
-        System.out.println("---types---");
-        typeMap.forEach((typeName, typeObject) ->
-                System.out.println(typeObject.toString() + ": " + typeObject.getClassType().toString()));
+        System.out.println("---single types---");
+        singleTypes.forEach((typeName, typeObject) ->
+                System.out.println(typeObject.toString() + ": " + typeObject.getClass().toString()));
         for (Scope scope : scopeStack) {
             scope.print();
         }

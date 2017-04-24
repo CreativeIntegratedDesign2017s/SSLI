@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.tree.*;
 import org.apache.commons.cli.*;
 
 public class SimpleInterpreter {
+    static int totalLines = 0;
 
     static class ModeConfiguration {
         boolean inOpt;
@@ -78,7 +79,7 @@ public class SimpleInterpreter {
                 else appendLine += "\n";
 
                 code.append(appendLine);
-                paren += parenCount(line);
+                paren += parenCount(appendLine);
             }
             return code.toString();
         }
@@ -129,13 +130,13 @@ public class SimpleInterpreter {
         // Check Type Consistency
         TypeChecker typeChecker = new TypeChecker(symTable);
         try { typeChecker.visit(tree); }
-        catch (RuntimeException e) {
+        catch (TypeChecker.TypeException e) {
             symTable.clear();
             if (config.inOpt) {
-                System.err.println(e.getMessage());
+                System.err.println(
+                        String.format("%s ...line %d: %s", e.errorData, e.localLine + totalLines, e.getMessage()));
                 System.exit(-1);
-            }
-            else {
+            } else {
                 System.out.println(e.getMessage());
                 return;
             }
@@ -144,6 +145,8 @@ public class SimpleInterpreter {
         // Declarations Confirmed
         symTable.commit();
         symTable.print();
+
+        totalLines += code.split("\r\n|\r|\n", -1).length - 1;
 
         // TODO: Make AST & IR Codes
         System.out.println("Tree: " + tree.toStringTree(parser));

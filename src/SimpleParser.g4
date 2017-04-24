@@ -23,22 +23,22 @@ stmt:	expr? ';'							            # Evaluate
     ;
 
 /* Expressions */
-expr:	ID									# Identifier
-    |	BOOL								# Boolean
-    |	INT									# Integer
-    |	STR									# String
-    |	expr '(' argu_list ')'				# ProcCall
-    |	expr '[' expr ']'					# Subscript
-    |	expr '[' expr ':' expr ']'			# Substring
-    |	op=('+'|'-') expr					# UnaryPM
-    |	<assoc=right> expr '^' expr			# Pow
-    |	expr op=('*'|'/') expr				# MulDiv
-    |	expr op=('+'|'-') expr				# AddSub
-    |	expr op=(LT|LE|EQ|NEQ|GE|GT) expr	# Compare
-    |	NOT expr							# Not
-    |	expr AND expr						# And
-    |	expr OR expr						# Or
-    |	'(' expr ')'						# Bracket
+expr:	ID									                # Identifier
+    |	BOOL								                # Boolean
+    |	INT									                # Integer
+    |	STR									                # String
+    |	expr '(' argu_list ')'				                # ProcCall
+    |	Container = expr '[' Indexer = expr ']'	            # Subscript
+    |	Container = expr '[' From = expr ':' To = expr ']'  # Substring
+    |	op=('+'|'-') expr					                # UnaryPM
+    |	<assoc=right> Base = expr '^' Exponent = expr       # Pow
+    |	Oprnd1 = expr op=('*'|'/') Oprnd2 = expr            # MulDiv
+    |	Oprnd1 = expr op=('+'|'-') Oprnd2 = expr		    # AddSub
+    |	Oprnd1 = expr op=(LT|LE|EQ|NEQ|GE|GT) Oprnd2 = expr # Compare
+    |	NOT expr							                # Not
+    |	Oprnd1 = expr AND Oprnd2 = expr		                # And
+    |	Oprnd1 = expr OR Oprnd2 = expr						# Or
+    |	'(' expr ')'						                # Bracket
     ;
 
 // type declaration subrules

@@ -1,76 +1,148 @@
+import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 abstract class TypeObject {
-    enum Class {
-        Unbound,
-        Alias,
-        Primitive,
-        Void,
+    abstract String getTypeName();      // 타입을 바로 표현할 수 있는 문자열 (int, void, str, bool, (int, int)->void)
+    boolean writable() { return true; }
+    TypeObject rankDown() { /*throw new RuntimeException(String.format("%s type is not support rank donw", this));*/
+        return null;
     }
+    TypeObject call(List<TypeObject> args) {
+        /* throw new RuntimeException(String.format("%s type is not support call", this)); */
+        return null;
+    }
+    @Override
+    public boolean equals(Object o) {
+        return o.getClass().equals(getClass());
+    }
+}
+
+abstract class ValueType extends TypeObject {
+}
+
+abstract class SingleType extends ValueType {
     String name;
-    abstract Class getClassType();
-    abstract String getTypeName();
-    abstract boolean writable();
-}
 
-class Unbound extends TypeObject {
-    @Override
-    public Class getClassType() { return Class.Unbound; }
-    @Override
-    public String getTypeName() { return null; }
-    @Override
-    public String toString() { return String.format("(unbound:%s)", rawExpr); }
-    @Override
-    public boolean writable() { return false; }
-
-    public Unbound(String rawExpression) {
-        rawExpr = rawExpression;
-    }
-    private String rawExpr;
-}
-
-class Primitive extends TypeObject {
-    @Override
-    public Class getClassType() { return Class.Primitive; }
-    @Override
-    public String getTypeName() { return name; }
-
-    Primitive(String typeName) {
+    SingleType(String typeName) {
         name = typeName;
     }
+
+    @Override
+    public String getTypeName() { return name; }
     @Override
     public String toString() {
         return String.format("%s", name);
     }
     @Override
-    public boolean writable() { return true; }
+    public boolean equals(Object o) {
+        return super.equals(o) && name.equals(((SingleType) o).name);
+    }
 }
 
-class Alias extends TypeObject {
+class Primitive extends SingleType {
+    Primitive(String name) {
+        super(name);
+    }
+}
+
+class Alias extends SingleType {
     private TypeObject base;
-    @Override
-    public Class getClassType() { return Class.Alias; }
     @Override
     public String getTypeName() { return name; }
 
     Alias(String typeName, TypeObject b) {
-        name = typeName;
+        super(typeName);
         base = b;
     }
     public String toString() {
         return String.format("%s(<-%s)", name, base.getTypeName());
     }
-    @Override
-    public boolean writable() { return true; }
 }
 
-class Void extends TypeObject {
+class Array extends ValueType {
+    private SingleType base;
+    private int dim;
+
+    Array (SingleType base, int dim) {
+        if (dim <= 0)
+            throw new RuntimeException("only positive dimension array is available!");
+
+        this.base = base;
+        this.dim = dim;
+    }
+
     @Override
-    public Class getClassType() { return Class.Void; }
+    public String getTypeName() {
+        return base.getTypeName() + String.join("", Collections.nCopies(dim, "[]"));
+    }
     @Override
-    public String getTypeName() { return "void"; }
+    public String toString() { return String.format("%d dim array of %s", dim, base); }
     @Override
-    public String toString() { return "void"; }
+    public TypeObject rankDown() {
+        if (dim == 1) {
+            return base;
+        } else {
+            return new Array(base, dim - 1);
+        }
+    }
     @Override
+    public boolean equals(Object o) {
+        return super.equals(o) && ((Array)o).base.equals(base) && ((Array)o).dim == dim;
+    }
+}
+
+class Reference extends ValueType {
+    ValueType refTarget;
+    Reference(ValueType refTarget) {
+        this.refTarget = refTarget;
+    }
+    @Override
+    String getTypeName() {
+        return refTarget.getTypeName() + "&";
+    }
+    @Override
+    public String toString() {
+        return "reference of " + refTarget.toString();
+    }
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o) && refTarget.equals(((Reference)o).refTarget);
+    }
+}
+
+class Function extends TypeObject {
+    SingleType rType;   // 현시점에서는 SingleType 리턴으로 충분함
+    List<ValueType> acceptParams;
+
+    Function(SingleType rType, List<ValueType> acceptParams) {
+        this.rType = rType;
+        this.acceptParams = acceptParams;
+    }
+    @Override
+    public String getTypeName() {
+        return "[" +
+                String.join(",", acceptParams.stream().map(ValueType::getTypeName).collect(Collectors.toList()))
+                + "] -> " + rType.getTypeName();
+    }
+
+    @Override
+    public TypeObject call(List<TypeObject> paramTypes) {
+        if (acceptParams.equals(paramTypes))
+            return rType;
+        else
+            return null;
+    }
+
+    @Override
+    public String toString() {
+        return getTypeName();
+    }
+}
+
+class Void extends SingleType {
+    Void() {
+        super("void");
+    }
     public boolean writable() { return false; }
 }
