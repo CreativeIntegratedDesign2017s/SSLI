@@ -1,5 +1,4 @@
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.RuleContext;
 import org.antlr.v4.runtime.tree.*;
 
 import java.util.ArrayList;
@@ -304,8 +303,6 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         return visit(ctx.stmt_list());
     }
 
-
-
     @Override
     public Expression visitStmt_list(SimpleParser.Stmt_listContext ctx) {
         symTable.enterNewScope();
@@ -317,6 +314,11 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         symTable.print();
         symTable.leaveScope();
         return result;
+    }
+
+    @Override
+    public Expression visitBlock(SimpleParser.BlockContext ctx) {
+        return visit(ctx.stmt_list());
     }
 
     @Override
