@@ -15,7 +15,7 @@ abstract class Expression {
     boolean isBoolean() { return false; }
     boolean isLValue() { return false; }
     Expression getRValue() {return this;}
-    boolean isConstant() { return false; }
+    boolean acceptable(Expression e) {return false;}
 }
 
 class ValueExpression extends Expression {
@@ -52,26 +52,22 @@ class ValueExpression extends Expression {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o == null) return false;
-
-        if (o.getClass() == getClass()) {
-            // 같은 Expression만 비교가능
-            ValueExpression expr = (ValueExpression) o;
-            return base.equals(expr.base);
-        }
-        return false;
-    }
-
-    boolean acceptable(ValueExpression ve) {
+    boolean acceptable(Expression e) {
+        ValueExpression ve = (ValueExpression) e;
         if (ve == null)
             return false;
-        if (equals(ve))
-            return true;
-        else if (!(base instanceof Reference))
+        if (!lValue)
             return false;
-        Reference ref = (Reference) base;
-        return ref.refTarget.equals(ve.base) && !ve.isConstant();
+        if (base instanceof Reference) {
+            Reference ref = (Reference) base;
+            if (!ve.isLValue())
+                return false;
+
+            if (ref.refTarget.equals(ve.base)) {
+                return !ve.isConstant();
+            }
+        }
+        return base.equals(ve.base);
     }
 
     @Override
@@ -98,7 +94,6 @@ class ValueExpression extends Expression {
         return base.getTypeName().equals("bool");
     }
 
-    @Override
     boolean isConstant() {
         return constant;
     }
@@ -128,7 +123,7 @@ class CallableExpression extends Expression {
                 }
                 Expression testExpr = iter.next();
                 ValueExpression paramExpr = new ValueExpression(parameter, true, false);
-                if (!paramExpr.acceptable((ValueExpression)testExpr)) {
+                if (!paramExpr.acceptable(testExpr)) {
                     pass = false;
                     break;
                 }
@@ -250,7 +245,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             throw new TypeException(ctx,String.format("%s expression is not lvalue", ctx.expr(0).getText()));
         }
 
-        if (!assignee.equals(assignor)) {
+        if (!assignee.acceptable(assignor)) {
             throw new TypeException(ctx,String.format("Assign type mismatches (%s <-> %s", assignee, assignor));
         }
 

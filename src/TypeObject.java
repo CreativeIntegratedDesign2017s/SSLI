@@ -8,10 +8,6 @@ abstract class TypeObject {
     TypeObject rankDown() { /*throw new RuntimeException(String.format("%s type is not support rank donw", this));*/
         return null;
     }
-    TypeObject call(List<TypeObject> args) {
-        /* throw new RuntimeException(String.format("%s type is not support call", this)); */
-        return null;
-    }
     @Override
     public boolean equals(Object o) {
         return o.getClass().equals(getClass());
@@ -124,14 +120,6 @@ class Function extends TypeObject {
         return "[" +
                 String.join(",", acceptParams.stream().map(ValueType::getTypeName).collect(Collectors.toList()))
                 + "] -> " + rType.getTypeName();
-    }
-
-    @Override
-    public TypeObject call(List<TypeObject> paramTypes) {
-        if (acceptParams.equals(paramTypes))
-            return rType;
-        else
-            return null;
     }
 
     @Override
