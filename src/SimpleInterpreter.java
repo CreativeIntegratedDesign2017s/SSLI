@@ -46,17 +46,27 @@ public class SimpleInterpreter {
         }
 
         String readCode() throws IOException {
-            if (interactive) {
+            if (!interactive) {
+                StringBuilder codeBuilder = new StringBuilder();
+                char data[] = new char[65536];
+                do {
+                    int readSize = read(data);
+                    codeBuilder.append(data, 0, readSize);
+                    if (readSize < data.length)
+                        break;
+                } while(true);
+                readBuffer = codeBuilder.toString();
+            } else {
                 if (readBuffer.length() == 0)
                     System.out.print(">>> ");
                 else
                     System.out.print("... ");
+                String newCode = readLine();
+                if (newCode == null)
+                    return readBuffer;
+                lastLine = newCode;
+                readBuffer += lastLine + "\n";
             }
-            String newCode = readLine();
-            if (newCode == null)
-                return readBuffer;
-            lastLine = newCode;
-            readBuffer += lastLine + "\n";
             return readBuffer;
         }
 
@@ -103,6 +113,7 @@ public class SimpleInterpreter {
             try {
                 tree = parser.prgm();
             } catch (RuntimeException e) {
+                symTable.clear();
                 if (reader.ready()) {
                     continue;
                 }
@@ -115,11 +126,29 @@ public class SimpleInterpreter {
                 }
             }
 
+            // Scope Validation
+            ScopeChecker scopeChecker = new ScopeChecker(symTable);
+            ParseTreeWalker walker = new ParseTreeWalker();
+            try {
+                walker.walk(scopeChecker, tree);
+            } catch (RuleException e) {
+                symTable.clear();
+                if (config.inOpt) {
+                    System.err.println(
+                            String.format("%s ...line %d: %s", e.errorData, e.localLine + totalLines, e.getMessage()));
+                    System.exit(-1);
+                } else {
+                    System.err.println(e.getMessage());
+                    reader.flushBuffer();
+                    continue;
+                }
+            }
+
             // Check Type Consistency
             TypeChecker typeChecker = new TypeChecker(symTable);
             try {
                 typeChecker.visit(tree);
-            } catch (TypeChecker.TypeException e) {
+            } catch (RuleException e) {
                 symTable.clear();
                 if (config.inOpt) {
                     System.err.println(

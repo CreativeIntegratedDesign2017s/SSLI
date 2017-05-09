@@ -1,5 +1,5 @@
-import javafx.util.Pair;
-import org.antlr.v4.runtime.misc.Triple;
+import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.tree.ParseTreeProperty;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -10,10 +10,12 @@ class SymbolTable {
     }
 
     static class VarSymbol implements Symbol {
+        int index;
         ValueType type;
 
-        VarSymbol(ValueType type) {
+        VarSymbol(int index, ValueType type) {
             this.type = type;
+            this.index = index;
         }
 
         @Override
@@ -24,6 +26,8 @@ class SymbolTable {
         public boolean isBuiltInSymbol() {
             return false;
         }
+
+        int getStackIndex() { return index; }
     }
 
     static class FuncSymbol implements Symbol {
@@ -78,6 +82,10 @@ class SymbolTable {
     }
 
     static class Scope {
+        int stackIndex = 1;
+        Scope(int startIndex) {
+            this.stackIndex = startIndex;
+        }
         String getScopeName() {
             return "local";
         }
@@ -100,10 +108,23 @@ class SymbolTable {
                 System.out.println(String.format("%s: %s", name, symbol));
             });
         }
+
+        int inclIndex() {
+            return stackIndex++;
+        }
     }
 
     static class GlobalScope extends Scope {
+        GlobalScope() {
+            super(1);
+        }
+        int stagedStackIndex = 1;
         HashMap<String, Symbol> stagedSymbolMap = new HashMap<>();
+
+        @Override
+        int inclIndex() {
+            return stagedStackIndex++;
+        }
 
         @Override
         void put(String symbolName, Symbol symbol) {
@@ -133,6 +154,7 @@ class SymbolTable {
         void commit() {
             stagedSymbolMap.forEach(super::put);
             stagedSymbolMap.clear();
+            stackIndex = stagedStackIndex;
         }
 
         void clear() {
@@ -142,6 +164,7 @@ class SymbolTable {
 
     private Deque<Scope> scopeStack = new ArrayDeque<>();
     private Map<String, SingleType> singleTypes = new HashMap<>();
+    private ParseTreeProperty<Symbol> ctxSymbolHash = new ParseTreeProperty<>();
 
     SymbolTable() {
         Scope gs = new GlobalScope();
@@ -207,7 +230,8 @@ class SymbolTable {
     }
 
     void enterNewScope() {
-        Scope localScope = new Scope();
+        Scope last = scopeStack.peek();
+        Scope localScope = new Scope(last.stackIndex);
         scopeStack.push(localScope);
     }
 
@@ -231,7 +255,7 @@ class SymbolTable {
         while (!scopeStack.isEmpty() && !(scopeStack.peek() instanceof GlobalScope))
             scopeStack.pop();
         if (scopeStack.isEmpty()) {
-            throw new RuntimeException("scope stack has broken");
+            throw new RuntimeException("scope stackIndex has broken");
         }
         ((GlobalScope) scopeStack.peek()).clear();
     }
@@ -245,6 +269,13 @@ class SymbolTable {
         return null;
     }
 
+    Symbol getSymbol(ParserRuleContext ctx) {
+        return ctxSymbolHash.get(ctx);
+    }
+
+    void putSymbol(ParserRuleContext ctx, Symbol symbol) {
+        ctxSymbolHash.put(ctx, symbol);
+    }
 
     SingleType getSingleType(String name) {
         return singleTypes.get(name);
@@ -310,7 +341,7 @@ class SymbolTable {
             throw new RuntimeException(String.format(
                     "symbol name %s is already defined in this scope", symbolName));
         }
-        VarSymbol retSymbol = new VarSymbol(MakeArrayOrSingle(to, expr.dimension));
+        VarSymbol retSymbol = new VarSymbol(current.inclIndex(), MakeArrayOrSingle(to, expr.dimension));
         current.put(symbolName, retSymbol);
         return retSymbol;
     }

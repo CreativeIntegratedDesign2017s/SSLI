@@ -1,5 +1,4 @@
 import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.*;
 
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -144,16 +143,6 @@ class CallableExpression extends Expression {
 class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     private SymbolTable symTable;
 
-    static class TypeException extends RuntimeException {
-        String errorData;
-        int localLine;
-        TypeException(ParserRuleContext ctx, String reason) {
-            super(reason);
-            errorData = ctx.getText();
-            localLine = ctx.start.getLine();
-        }
-    }
-
     /* Constructor */
     TypeChecker(SymbolTable _symTable) {
         symTable = _symTable;
@@ -161,37 +150,16 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
 
     @Override
     public Expression visitProcedure(SimpleParser.ProcedureContext ctx) {
-        //enterProcedure
-        SymbolTable.ValueExpr rType = new SymbolTable.ValueExpr(ctx.rtype().getText(), 0);
-        TerminalNode vNode = ctx.para_list().VOID();
-        List<SymbolTable.ParameterExpr> paramTypes = new ArrayList<>();
-        if (vNode == null) {
-            for (SimpleParser.PtypeContext ptype : ctx.para_list().ptype()) {
-                String pTypeName = ptype.ID().getText();
-                int dim = (ptype.getChildCount() - 1) / 2;
-                boolean isRef = ptype.getChildCount() == 2;
-                paramTypes.add(new SymbolTable.ParameterExpr(pTypeName, dim, isRef));
-            }
-        }
-
-        SymbolTable.FuncSymbol f = symTable.declareFunction(ctx.ID().getText(), rType, paramTypes, false);
+        SymbolTable.FuncSymbol f = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.ID().getText());
         ValueType retType = f.overloads.get(f.overloads.size() - 1).rType;
-        symTable.enterNewScope();
 
-        //visit Children
-        visit(ctx.para_list());
         ValueExpression retExpr = (ValueExpression)visit(ctx.block());
         if (retExpr == null)
             retExpr = new ValueExpression(new Void(), false, true);
         if (!retExpr.getBase().equals(retType))
-            throw new TypeException(ctx,
+            throw new RuleException(ctx,
                     String.format("Procedure %s's return type is not match with contents (%s<->%s)",
                             ctx.ID().getText(), retType, retExpr.getBase()));
-
-        //exitProcedure
-        symTable.print();
-        symTable.leaveScope();
-
         return null;
     }
 
@@ -201,34 +169,20 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             if (retExpr == null)
                 retExpr = expr;
             else if (retExpr != expr) {
-                throw new TypeException(ctx, String.format("return type mismatches (%s<->%s)", retExpr, expr));
+                throw new RuleException(ctx, String.format("return type mismatches (%s<->%s)", retExpr, expr));
             }
         }
         return retExpr;
     }
 
     @Override
-    public Expression visitPara_list(SimpleParser.Para_listContext ctx) {
-        for (int i = 0; i < (ctx.getChildCount() + 1) / 3; i++)
-        {
-            SimpleParser.PtypeContext typeCtx = ctx.ptype(i);
-            symTable.declareVariable(ctx.ID(i).getText(),
-                    new SymbolTable.ValueExpr(typeCtx.ID().getText(), (typeCtx.getChildCount() - 1) / 2));
-        }
-
-        return null;
-    }
-
-    @Override
     public Expression visitDeclare(SimpleParser.DeclareContext ctx) {
-        SimpleParser.TypeContext typeCtx = ctx.type();
-        SymbolTable.VarSymbol v = symTable.declareVariable(ctx.ID().getText(),
-                new SymbolTable.ValueExpr(typeCtx.ID().getText(), (typeCtx.getChildCount() - 1) / 3));
+        SymbolTable.VarSymbol v = (SymbolTable.VarSymbol) symTable.getSymbol(ctx);
 
         if (ctx.init().expr() != null) {
             ValueExpression initExpr = (ValueExpression) visit(ctx.init().expr());
             if (!v.type.equals(initExpr.getBase())) {
-                throw new TypeException(ctx,
+                throw new RuleException(ctx,
                         String.format("Variable initialize type mismatches (%s <-> %s)", v.type, initExpr));
             }
         }
@@ -242,11 +196,11 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         Expression assignor = visit(ctx.expr(1));
 
         if (!assignee.isLValue()) {
-            throw new TypeException(ctx,String.format("%s expression is not lvalue", ctx.expr(0).getText()));
+            throw new RuleException(ctx,String.format("%s expression is not lvalue", ctx.expr(0).getText()));
         }
 
         if (!assignee.acceptable(assignor)) {
-            throw new TypeException(ctx,String.format("Assign type mismatches (%s <-> %s", assignee, assignor));
+            throw new RuleException(ctx,String.format("Assign type mismatches (%s <-> %s", assignee, assignor));
         }
 
         return null;
@@ -256,7 +210,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     public Expression visitIfElse(SimpleParser.IfElseContext ctx) {
         Expression conditionExpr = visit(ctx.expr());
         if (!conditionExpr.isBoolean()) {
-            throw new TypeException(ctx,
+            throw new RuleException(ctx,
                     String.format("Condition expression must be boolean (%s:%s)", ctx.expr().getText(), conditionExpr));
         }
 
@@ -269,7 +223,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     public Expression visitDoWhile(SimpleParser.DoWhileContext ctx) {
         Expression conditionExpr = visit(ctx.expr());
         if (!conditionExpr.isBoolean()) {
-            throw new TypeException(ctx,
+            throw new RuleException(ctx,
                     String.format("Condition expression must be boolean (%s:%s)", ctx.expr().getText(), conditionExpr));
         }
 
@@ -291,7 +245,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     public Expression visitWhileDo(SimpleParser.WhileDoContext ctx) {
         Expression conditionExpr = visit(ctx.expr());
         if (!conditionExpr.isBoolean()) {
-            throw new TypeException(ctx,
+            throw new RuleException(ctx,
                     String.format("Condition expression must be boolean (%s:%s)", ctx.expr().getText(), conditionExpr));
         }
 
@@ -300,15 +254,9 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
 
     @Override
     public Expression visitStmt_list(SimpleParser.Stmt_listContext ctx) {
-        symTable.enterNewScope();
-
-        Expression result = MergeExpression(ctx, ctx.stmt().stream()
+        return MergeExpression(ctx, ctx.stmt().stream()
                 .map(this::visit)
                 .collect(Collectors.toList()));
-
-        symTable.print();
-        symTable.leaveScope();
-        return result;
     }
 
     @Override
@@ -318,9 +266,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
 
     @Override
     public Expression visitIdentifier(SimpleParser.IdentifierContext ctx) {
-        SymbolTable.Symbol symbol = symTable.getSymbol(ctx.getText());
-        if (symbol == null)
-            throw new TypeException(ctx,"No symbol has found with " + ctx.getText());
+        SymbolTable.Symbol symbol = symTable.getSymbol(ctx);
 
         if (symbol instanceof SymbolTable.VarSymbol) {
             SymbolTable.VarSymbol v = (SymbolTable.VarSymbol) symbol;
@@ -331,7 +277,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             return new CallableExpression(f.overloads);
         }
 
-        throw new TypeException(ctx,"Undefined symbol" + ctx.getText());
+        throw new RuleException(ctx,"Undefined symbol" + ctx.getText());
     }
 
     private Expression visitPrimitive(String primitiveName) {
@@ -358,7 +304,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     public Expression visitProcCall(SimpleParser.ProcCallContext ctx) {
         Expression funcExpression = visit(ctx.expr());
         if (!(funcExpression instanceof CallableExpression)) {
-            throw new TypeException(ctx,String.format("%s is not callable", ctx.expr().getText()));
+            throw new RuleException(ctx,String.format("%s is not callable", ctx.expr().getText()));
         }
 
         List<Expression> arguments = ctx.argu_list().expr().stream()
@@ -367,7 +313,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
 
         Expression rE = funcExpression.call(arguments);
         if (rE == null) {
-            throw new TypeException(ctx,
+            throw new RuleException(ctx,
                     String.format("No parameter set is matched with %s, (Callable: %s, Arguments: %s)",
                             ctx.expr().getText(), funcExpression, arguments));
         }
@@ -379,11 +325,11 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         Expression containerExpr = visit(ctx.Container);
         Expression indexerExpr = visit(ctx.Indexer);
         if (!indexerExpr.isNumeric()) {
-            throw new TypeException(ctx,String.format("Non integer subscript is not support (%s)", ctx.Indexer.getText()));
+            throw new RuleException(ctx,String.format("Non integer subscript is not support (%s)", ctx.Indexer.getText()));
         }
         Expression rankDownExpr = containerExpr.rankDown();
         if (rankDownExpr == null) {
-            throw new TypeException(ctx,String.format("Can't subscript for this expression (%s)", ctx.Container.getText()));
+            throw new RuleException(ctx,String.format("Can't subscript for this expression (%s)", ctx.Container.getText()));
         }
         return rankDownExpr;
     }
@@ -395,11 +341,11 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         Expression toExpr = visit(ctx.To);
 
         if (!containerExpr.isLiteral()) {
-            throw new TypeException(ctx,String.format("Only string expression can be divided (%s)", ctx.Container.getText()));
+            throw new RuleException(ctx,String.format("Only string expression can be divided (%s)", ctx.Container.getText()));
         }
 
         if (!fromExpr.isNumeric() || toExpr.isNumeric()) {
-            throw new TypeException(ctx,String.format("Indexing expression must be numeric (%s, %s)", ctx.From.getText(), ctx.To.getText()));
+            throw new RuleException(ctx,String.format("Indexing expression must be numeric (%s, %s)", ctx.From.getText(), ctx.To.getText()));
         }
 
         return containerExpr.getRValue();
@@ -438,7 +384,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             case SimpleParser.AMP:
                 return "amp";
             default:
-                throw new TypeException(ctx,String.format("Not supporting operator token %d", opToken));
+                throw new RuleException(ctx,String.format("Not supporting operator token %d", opToken));
         }
     }
 
@@ -448,7 +394,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             Expression expr = visit(ctx);
 
             if (!(expr instanceof ValueExpression)) {
-                throw new TypeException(ctx,"Function cannot associated with operator (" + ctx.getText() + ")");
+                throw new RuleException(ctx,"Function cannot associated with operator (" + ctx.getText() + ")");
             }
             opArgs.add((ValueExpression) expr);
         }
@@ -459,7 +405,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             List<String> argTypeList = opArgs.stream()
                     .map(v -> v.getBase().getTypeName())
                     .collect(Collectors.toList());
-            throw new TypeException(pCtx,
+            throw new RuleException(pCtx,
                     String.format("No operator has found with %s for (%s)", operatorName, String.join(", ", argTypeList)));
         }
 
@@ -472,7 +418,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             List<String> argTypeList = opArgs.stream()
                     .map(v -> v.getBase().getTypeName())
                     .collect(Collectors.toList());
-            throw new TypeException(pCtx,
+            throw new RuleException(pCtx,
                     String.format("No operator has found with %s for (%s)", operatorName, String.join(", ", argTypeList)));
         }
         return ret;
