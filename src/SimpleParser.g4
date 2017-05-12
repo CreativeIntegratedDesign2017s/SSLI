@@ -36,7 +36,7 @@ expr:	ID									                # Identifier
     |	Oprnd1 = expr op=('+'|'-') Oprnd2 = expr		    # AddSub
     |	Oprnd1 = expr op=(LT|LE|EQ|NEQ|GE|GT) Oprnd2 = expr # Compare
     |	NOT expr							                # Not
-    |	Oprnd1 = expr AND Oprnd2 = expr		                # And
+    |	Oprnd1 = expr AND Oprnd2 = expr		                    # And
     |	Oprnd1 = expr OR Oprnd2 = expr						# Or
     |	'(' expr ')'						                # Bracket
     ;

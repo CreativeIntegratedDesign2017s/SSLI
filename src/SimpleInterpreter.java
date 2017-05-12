@@ -127,6 +127,9 @@ public class SimpleInterpreter {
             }
         }
 
+        // Build AST
+        //AbstractParseTreeVisitor
+
         // Check Type Consistency
         TypeChecker typeChecker = new TypeChecker(symTable);
         try { typeChecker.visit(tree); }
