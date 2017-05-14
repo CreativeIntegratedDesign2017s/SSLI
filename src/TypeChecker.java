@@ -166,7 +166,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         for (Expression expr : exprs) {
             if (retExpr == null)
                 retExpr = expr;
-            else if (retExpr != expr) {
+            else if (retExpr.equals(expr)) {
                 throw new RuleException(ctx, String.format("return type mismatches (%s<->%s)", retExpr, expr));
             }
         }

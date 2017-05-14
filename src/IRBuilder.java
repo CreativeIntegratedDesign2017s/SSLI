@@ -2,7 +2,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class StackIndex {
+abstract class IRArgument {
+}
+
+class StackIndex extends IRArgument {
     int index;
     boolean globalStack;
 
@@ -21,7 +24,7 @@ class StackIndex {
     }
 }
 
-class Constant {
+class Constant extends IRArgument{
     String value;
     Constant(String sValue) {
         value = sValue;
@@ -36,10 +39,24 @@ class Constant {
     }
 }
 
+class RawArg extends IRArgument {
+    String arg;
+    RawArg(Object o) {
+        arg = o.toString();
+    }
+
+    @Override
+    public String toString() {
+        return arg;
+    }
+}
+
 class IRStatement {
     String stmt;
-    IRStatement(String command, Object ... arguments) {
-        stmt = command + " " + String.join(" ",
+    IRStatement(String command, IRArgument ... arguments) {
+        stmt = command;
+        if (arguments.length > 0)
+        stmt += " " + String.join(" ",
                 Arrays.stream(arguments).map(Object::toString).collect(Collectors.toList()));
     }
     @Override
@@ -103,7 +120,7 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
         String funcName = ctx.ID().getText() + fDecl.getDecorator();
         IRChunk functionBegin = new IRChunk() {{
             statements = new ArrayList<IRStatement>() {{
-                add(new IRStatement("PROC", funcName));
+                add(new IRStatement("PROC", new RawArg(funcName)));
             }};
         }};
 
@@ -119,10 +136,21 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
         }
 
         IRChunk blockChunk = visit(ctx.block());
+        int maxLine = blockChunk.statements.size();
+        for (int i = 0; i < maxLine; ++i) {
+            IRStatement stmt = blockChunk.statements.get(i);
+            if (stmt.stmt.equals("TEMP_RET")) {
+                if (i < maxLine - 1)
+                    blockChunk.statements.set(i, new IRStatement("JMP", new Constant(maxLine - i - 1)));
+                else
+                    // 마지막 줄이라 하더라도 줄을 지우면 그 위에서 명령줄의 수를 이용해서 작성해놓은 로직이 무너질 수 있음.
+                    blockChunk.statements.set(i, new IRStatement("NOP"));
+            }
+        }
 
-        top = prevTop;
+        top = new StackIndex(1, false);
 
-        return aggregateResult(functionBegin, blockChunk, new IRChunk(new IRStatement("RET")));
+        return aggregateResult(functionBegin, blockChunk, new IRChunk(new IRStatement("RET", top)));
     }
 
     @Override
@@ -181,7 +209,7 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
         IRChunk ifPart = visit(ctx.stmt_list(0));
         top = prevTop;
 
-        elsePart = aggregateResult(elsePart, new IRChunk(new IRStatement("JMP", ifPart.size())));
+        elsePart = aggregateResult(elsePart, new IRChunk(new IRStatement("JMP", new Constant(ifPart.size()))));
 
         IRChunk exprChunk = visit(ctx.expr());
         IRChunk testChunk = new IRChunk(new IRStatement("TEST", top, new Constant(elsePart.size())));
@@ -216,7 +244,9 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
     
     @Override public IRChunk visitReturn(SimpleParser.ReturnContext ctx) {
         IRChunk retExprChunk = ctx.expr() != null ? visit(ctx.expr()) : null;
-        return aggregateResult(retExprChunk, new IRChunk(new IRStatement("RET", top)));
+        IRChunk moveRetValueChunk = new IRChunk(
+                new IRStatement("MOVE", new StackIndex(1, false), top));
+        return aggregateResult(retExprChunk, moveRetValueChunk, new IRChunk(new IRStatement("TEMP_RET")));
     }
     
     @Override public IRChunk visitSubstring(SimpleParser.SubstringContext ctx) {
