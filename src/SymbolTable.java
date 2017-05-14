@@ -10,12 +10,10 @@ class SymbolTable {
     }
 
     static class VarSymbol implements Symbol {
-        int index;
         ValueType type;
 
-        VarSymbol(int index, ValueType type) {
+        VarSymbol(ValueType type) {
             this.type = type;
-            this.index = index;
         }
 
         @Override
@@ -26,8 +24,6 @@ class SymbolTable {
         public boolean isBuiltInSymbol() {
             return false;
         }
-
-        int getStackIndex() { return index; }
     }
 
     static class FuncSymbol implements Symbol {
@@ -81,10 +77,10 @@ class SymbolTable {
         }
     }
 
+
+
     static class Scope {
-        int stackIndex = 1;
-        Scope(int startIndex) {
-            this.stackIndex = startIndex;
+        Scope() {
         }
         String getScopeName() {
             return "local";
@@ -108,23 +104,12 @@ class SymbolTable {
                 System.out.println(String.format("%s: %s", name, symbol));
             });
         }
-
-        int inclIndex() {
-            return stackIndex++;
-        }
     }
 
     static class GlobalScope extends Scope {
         GlobalScope() {
-            super(1);
         }
-        int stagedStackIndex = 1;
         HashMap<String, Symbol> stagedSymbolMap = new HashMap<>();
-
-        @Override
-        int inclIndex() {
-            return stagedStackIndex++;
-        }
 
         @Override
         void put(String symbolName, Symbol symbol) {
@@ -154,7 +139,6 @@ class SymbolTable {
         void commit() {
             stagedSymbolMap.forEach(super::put);
             stagedSymbolMap.clear();
-            stackIndex = stagedStackIndex;
         }
 
         void clear() {
@@ -165,6 +149,7 @@ class SymbolTable {
     private Deque<Scope> scopeStack = new ArrayDeque<>();
     private Map<String, SingleType> singleTypes = new HashMap<>();
     private ParseTreeProperty<Symbol> ctxSymbolHash = new ParseTreeProperty<>();
+    private ParseTreeProperty<Function> ctxFunctionHash = new ParseTreeProperty<>();
 
     SymbolTable() {
         Scope gs = new GlobalScope();
@@ -230,8 +215,7 @@ class SymbolTable {
     }
 
     void enterNewScope() {
-        Scope last = scopeStack.peek();
-        Scope localScope = new Scope(last.stackIndex);
+        Scope localScope = new Scope();
         scopeStack.push(localScope);
     }
 
@@ -275,6 +259,14 @@ class SymbolTable {
 
     void putSymbol(ParserRuleContext ctx, Symbol symbol) {
         ctxSymbolHash.put(ctx, symbol);
+    }
+
+    Function getFunction(ParserRuleContext ctx) {
+        return ctxFunctionHash.get(ctx);
+    }
+
+    void putFunction(ParserRuleContext ctx, Function f) {
+        ctxFunctionHash.put(ctx, f);
     }
 
     SingleType getSingleType(String name) {
@@ -341,12 +333,12 @@ class SymbolTable {
             throw new RuntimeException(String.format(
                     "symbol name %s is already defined in this scope", symbolName));
         }
-        VarSymbol retSymbol = new VarSymbol(current.inclIndex(), MakeArrayOrSingle(to, expr.dimension));
+        VarSymbol retSymbol = new VarSymbol(MakeArrayOrSingle(to, expr.dimension));
         current.put(symbolName, retSymbol);
         return retSymbol;
     }
 
-    FuncSymbol declareFunction(String symbolName, ValueExpr rExpr, List<ParameterExpr> parameters, boolean builtIn) {
+    Function declareFunction(String symbolName, ValueExpr rExpr, List<ParameterExpr> parameters, boolean builtIn) {
         SingleType rTo = getSingleType(rExpr.typeName);
         if (rTo == null)
             throw new RuntimeException(String.format(
@@ -380,7 +372,7 @@ class SymbolTable {
                             "%s symbol is previously declared by %s type", symbolName, prevDecl
                     ));
                 }
-                return funcDecl;
+                return declFunc;
             } else {
                 throw new RuntimeException(
                         String.format("%s is previously defined by %s symbol", symbolName, prevDecl)
@@ -393,7 +385,7 @@ class SymbolTable {
             }
         };
         current.put(symbolName, ret);
-        return ret;
+        return declFunc;
     }
 
     void print() {

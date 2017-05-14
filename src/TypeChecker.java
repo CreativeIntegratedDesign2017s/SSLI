@@ -8,7 +8,6 @@ import java.util.stream.Collectors;
 abstract class Expression {
 
     Expression rankDown() { return null; }
-    Expression call(List<Expression> argTypes) { return null; }
     boolean isNumeric() { return false; }
     boolean isLiteral() { return false; }
     boolean isBoolean() { return false; }
@@ -100,12 +99,11 @@ class ValueExpression extends Expression {
 
 class CallableExpression extends Expression {
     private List<Function> types;
-    CallableExpression(List<Function> types) {
-        this.types = types;
+    CallableExpression(SymbolTable.FuncSymbol fSymbol) {
+        this.types = fSymbol.overloads;
     }
 
-    @Override
-    Expression call(List<Expression> argTypes) {
+    Function callTest(List<Expression> argTypes) {
         for (Expression e : argTypes) {
             if (!(e instanceof ValueExpression))
                 // 함수 인자에 함수 못씀
@@ -128,7 +126,7 @@ class CallableExpression extends Expression {
                 }
             }
             if (pass) {
-                return new ValueExpression(f.rType, false, false);
+                return f;
             }
         }
         return null;
@@ -274,7 +272,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         }
         else if (symbol instanceof SymbolTable.FuncSymbol) {
             SymbolTable.FuncSymbol f = (SymbolTable.FuncSymbol) symbol;
-            return new CallableExpression(f.overloads);
+            return new CallableExpression(f);
         }
 
         throw new RuleException(ctx,"Undefined symbol" + ctx.getText());
@@ -302,22 +300,21 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
 
     @Override
     public Expression visitProcCall(SimpleParser.ProcCallContext ctx) {
-        Expression funcExpression = visit(ctx.expr());
-        if (!(funcExpression instanceof CallableExpression)) {
-            throw new RuleException(ctx,String.format("%s is not callable", ctx.expr().getText()));
-        }
+        SymbolTable.FuncSymbol fSymbol = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.ID().getText());
 
         List<Expression> arguments = ctx.argu_list().expr().stream()
                 .map(this::visit)
                 .collect(Collectors.toList());
 
-        Expression rE = funcExpression.call(arguments);
-        if (rE == null) {
+        CallableExpression funcExpression = new CallableExpression(fSymbol);
+        Function f = funcExpression.callTest(arguments);
+        if (f == null) {
             throw new RuleException(ctx,
                     String.format("No parameter set is matched with %s, (Callable: %s, Arguments: %s)",
-                            ctx.expr().getText(), funcExpression, arguments));
+                            ctx.ID().getText(), funcExpression, arguments));
         }
-        return rE;
+        symTable.putFunction(ctx, f);
+        return new ValueExpression(f.rType, false, false);
     }
 
     @Override
@@ -411,8 +408,8 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
 
 
         // 임시로 콜라블 익스프레션을 생성해서 호출
-        CallableExpression temp = new CallableExpression(opSymbol.overloads);
-        Expression ret = temp.call(opArgs.stream().map(o -> (Expression)o).collect(Collectors.toList()));
+        CallableExpression temp = new CallableExpression(opSymbol);
+        Function ret = temp.callTest(opArgs.stream().map(o -> (Expression)o).collect(Collectors.toList()));
         if (ret == null)
         {
             List<String> argTypeList = opArgs.stream()
@@ -421,7 +418,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             throw new RuleException(pCtx,
                     String.format("No operator has found with %s for (%s)", operatorName, String.join(", ", argTypeList)));
         }
-        return ret;
+        return new ValueExpression(ret.rType, false, false);
     }
 
     @Override

@@ -126,6 +126,11 @@ class Function extends TypeObject {
     public String toString() {
         return getTypeName();
     }
+
+    public String getDecorator() {
+        return "@" + String.join("@",
+                acceptParams.stream().map(ValueType::getTypeName).collect(Collectors.toList()));
+    }
 }
 
 class Void extends SingleType {

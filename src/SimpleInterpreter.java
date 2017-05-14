@@ -5,6 +5,7 @@ import org.apache.commons.cli.*;
 
 public class SimpleInterpreter {
     static int totalLines = 0;
+    static StackIndex globalIndex = new StackIndex(0, true);
 
     static class ModeConfiguration {
         boolean inOpt;
@@ -164,6 +165,15 @@ public class SimpleInterpreter {
             // Declarations Confirmed
             symTable.commit();
             symTable.print();
+
+            // IR Code Generation
+            IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
+            IRChunk chunk = irBuilder.visit(tree);
+            System.out.println("----IR CODE GENERATION----");
+            for (IRStatement stmt : chunk.statements) {
+                System.out.println(stmt.toString());
+            }
+            globalIndex = irBuilder.top;
 
             totalLines += code.split("\r\n|\r|\n", -1).length - 1;
 

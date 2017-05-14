@@ -25,8 +25,9 @@ public class ScopeChecker extends SimpleParserBaseListener {
         for (int i = 0; i < (ctx.getChildCount() + 1) / 3; i++)
         {
             SimpleParser.PtypeContext typeCtx = ctx.ptype(i);
-            symTable.declareVariable(ctx.ID(i).getText(),
+            SymbolTable.VarSymbol v = symTable.declareVariable(ctx.ID(i).getText(),
                     new SymbolTable.ValueExpr(typeCtx.ID().getText(), (typeCtx.getChildCount() - 1) / 2));
+            symTable.putSymbol(typeCtx, v);
         }
     }
 
@@ -52,7 +53,8 @@ public class ScopeChecker extends SimpleParserBaseListener {
             }
         }
 
-        symTable.declareFunction(ctx.ID().getText(), rType, paramTypes, false);
+        Function fDecl = symTable.declareFunction(ctx.ID().getText(), rType, paramTypes, false);
+        symTable.putFunction(ctx, fDecl);
         symTable.enterNewScope();
     }
 
