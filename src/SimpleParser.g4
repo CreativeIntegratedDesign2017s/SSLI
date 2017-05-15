@@ -27,7 +27,7 @@ expr:	ID									                # Identifier
     |	BOOL								                # Boolean
     |	INT									                # Integer
     |	STR									                # String
-    |	expr '(' argu_list ')'				                # ProcCall
+    |	ID '(' argu_list ')'				                # ProcCall
     |	Container = expr '[' Indexer = expr ']'	            # Subscript
     |	Container = expr '[' From = expr ':' To = expr ']'  # Substring
     |	op=('+'|'-') expr					                # UnaryPM

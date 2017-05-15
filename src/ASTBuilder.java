@@ -1,6 +1,5 @@
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import org.antlr.v4.runtime.tree.*;
 
 public class ASTBuilder extends SimpleParserBaseListener {
 
@@ -14,10 +13,3 @@ public class ASTBuilder extends SimpleParserBaseListener {
         System.out.println("Hello!");
     }
 }
-
-class ASTNode {
-    public String errorData;
-    public int localLine;
-}
-
-

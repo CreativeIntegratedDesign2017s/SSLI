@@ -1,17 +1,28 @@
-import java.util.List;
+import java.util.*;
+import org.antlr.v4.runtime.*;
 
 public class ASTUnit {
+    public void print() {}
 }
 
-class PrgmNode extends ASTNode {}
+class ASTStmtUnit extends ASTUnit {
+    ASTStmt stmt;
+}
 
+class ASTProcUnit extends ASTUnit {
+    class Param {
+        Token type;
+        boolean reference;
+        int dimension;
+        Token id;
+    }
 
-class ProcNode extends ASTNode {}
+    Token procName;
+    Token returnType;
+    List<Param> param;
+    List<ASTStmt> stmt;
+}
 
-class ImportNode extends ASTNode {}
-
-class BlockNode extends ASTNode {}
-
-class Stmt_listNode extends ASTNode {
-    public List<StmtNode> stmtLst;
+class ASTImportUnit extends ASTUnit {
+    Token file;
 }
