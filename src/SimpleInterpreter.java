@@ -92,17 +92,15 @@ public class SimpleInterpreter {
         InputStream is = (config.inOpt) ? (new FileInputStream(config.inFile)) : (System.in);
         CodeReader cr = new CodeReader(is);
 
-        SymbolTable symTable = new SymbolTable();
-
         String code = cr.readCodes();
         while (code != null) {
-            InterpretProgramViaStream(code, symTable, config);
+            InterpretProgramViaStream(code, config);
             code = cr.readCodes();
         }
     }
 
     /* Core Loop */
-    static private void InterpretProgramViaStream(String code, SymbolTable symTable, ModeConfiguration config) throws IOException {
+    static private void InterpretProgramViaStream(String code, ModeConfiguration config) throws IOException {
 
         // Build Lexer & Parser
         ANTLRInputStream input = new ANTLRInputStream(code);
@@ -128,33 +126,11 @@ public class SimpleInterpreter {
         }
 
         // Build AST
-        //AbstractParseTreeVisitor
-
-        // Check Type Consistency
-        TypeChecker typeChecker = new TypeChecker(symTable);
-        try { typeChecker.visit(tree); }
-        catch (TypeChecker.TypeException e) {
-            symTable.clear();
-            if (config.inOpt) {
-                System.err.println(
-                        String.format("%s ...line %d: %s", e.errorData, e.localLine + totalLines, e.getMessage()));
-                System.exit(-1);
-            } else {
-                System.out.println(e.getMessage());
-                return;
-            }
-        }
-
-        // Declarations Confirmed
-        symTable.commit();
-        symTable.print();
+        ParseTreeWalker walker = new ParseTreeWalker();
+        ASTBuilder ab = new ASTBuilder();
+        walker.walk(ab, tree);
 
         totalLines += code.split("\r\n|\r|\n", -1).length - 1;
-
-        // TODO: Make AST & IR Codes
-        System.out.println("Tree: " + tree.toStringTree(parser));
-
-        // TODO: Execute the Code
     }
 
 }
