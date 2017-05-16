@@ -14,6 +14,12 @@ class ASTStmtUnit extends ASTUnit {
     public String toString() { return stmt.toString(); }
 }
 
+class ASTImportUnit extends ASTUnit {
+    Token file;
+    ASTImportUnit(Token file) { this.file = file; }
+    public String toString() { return "import " + file.getText(); }
+}
+
 class ASTProcUnit extends ASTUnit {
     class Param {
         Token type;
@@ -26,8 +32,4 @@ class ASTProcUnit extends ASTUnit {
     Token returnType;
     List<Param> param;
     List<ASTStmt> stmt;
-}
-
-class ASTImportUnit extends ASTUnit {
-    Token file;
 }
