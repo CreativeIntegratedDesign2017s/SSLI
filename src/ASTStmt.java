@@ -11,12 +11,12 @@ import org.antlr.v4.runtime.*;
  * ASTReturn: Return Statement
  * ASTNested: Nested Statement
  */
-public class ASTStmt {
-    public void print() {}
-}
+public class ASTStmt implements ASTNode { }
 
 class ASTExprStmt extends ASTStmt {
     ASTExpr expr;
+    ASTExprStmt(ASTExpr expr) { this.expr = expr; }
+    public String toString() { return expr.toString(); }
 }
 
 class ASTDeclStmt extends ASTStmt {

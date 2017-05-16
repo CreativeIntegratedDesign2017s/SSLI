@@ -126,9 +126,10 @@ public class SimpleInterpreter {
         }
 
         // Build AST
-        ParseTreeWalker walker = new ParseTreeWalker();
         ASTBuilder ab = new ASTBuilder();
-        walker.walk(ab, tree);
+        ab.visit(tree);
+
+        System.out.println(ab.prgm.get(0).toString());
 
         totalLines += code.split("\r\n|\r|\n", -1).length - 1;
     }

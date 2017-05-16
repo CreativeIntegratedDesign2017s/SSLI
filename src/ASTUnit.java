@@ -1,12 +1,17 @@
 import java.util.*;
 import org.antlr.v4.runtime.*;
 
-public class ASTUnit {
-    public void print() {}
-}
+/* Derivations of ASTUnit
+ * ASTStmtUnit: Statement Unit
+ * ASTProcUnit: Definition of Procedure
+ * ASTImportUnit: import "blah blah blah"
+ */
+public class ASTUnit implements ASTNode { }
 
 class ASTStmtUnit extends ASTUnit {
     ASTStmt stmt;
+    ASTStmtUnit(ASTStmt stmt) { this.stmt = stmt; }
+    public String toString() { return stmt.toString(); }
 }
 
 class ASTProcUnit extends ASTUnit {
