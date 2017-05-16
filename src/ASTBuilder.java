@@ -34,7 +34,6 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
     // public ASTNode visitReturn(SimpleParser.ReturnContext ctx) { return visitChildren(ctx); }
     // public ASTNode visitNested(SimpleParser.NestedContext ctx) { return visitChildren(ctx); }
 
-
     /** 16 Rules for Expression **/
     public ASTNode visitBracket(SimpleParser.BracketContext ctx) {
         return visit(ctx.expr());
@@ -76,13 +75,18 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
         return new ASTBinary(ctx.OR().getSymbol(), (ASTExpr)visit(ctx.Oprnd1), (ASTExpr)visit(ctx.Oprnd2));
     }
     public ASTNode visitSubscript(SimpleParser.SubscriptContext ctx) {
-        return this.visitChildren(ctx);
+        return new ASTSubscript((ASTExpr)visit(ctx.Container), (ASTExpr)visit(ctx.Indexer));
     }
     public ASTNode visitSubstring(SimpleParser.SubstringContext ctx) {
-        return this.visitChildren(ctx);
+        return new ASTSubstring((ASTExpr)visit(ctx.Container), (ASTExpr)visit(ctx.From), (ASTExpr)visit(ctx.To));
     }
     public ASTNode visitProcCall(SimpleParser.ProcCallContext ctx) {
-        return this.visitChildren(ctx);
+        ASTProcCall expr = new ASTProcCall(ctx.ID().getSymbol());
+        SimpleParser.Argu_listContext args = ctx.argu_list();
+        if (args.getChildCount() != 0 && args.VOID() == null)
+            for (SimpleParser.ExprContext param: args.expr())
+                expr.param.add((ASTExpr)visit(param));
+        return expr;
     }
 
 }

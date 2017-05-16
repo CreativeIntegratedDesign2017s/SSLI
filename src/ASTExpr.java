@@ -60,6 +60,11 @@ class ASTSubscript extends ASTExpr {
     ASTExpr map;
     ASTExpr index;
 
+    ASTSubscript(ASTExpr map, ASTExpr index) {
+        this.map = map;
+        this.index = index;
+    }
+
     public String toString() {
         return map.toString() + "[" + index.toString() + "]";
     }
@@ -70,6 +75,12 @@ class ASTSubstring extends ASTExpr {
     ASTExpr index1;
     ASTExpr index2;
 
+    ASTSubstring(ASTExpr str, ASTExpr index1, ASTExpr index2) {
+        this.str = str;
+        this.index1 = index1;
+        this.index2 = index2;
+    }
+
     public String toString() {
         return str.toString() + "[" + index1.toString() + ":" + index2.toString() + "]";
     }
@@ -79,10 +90,15 @@ class ASTProcCall extends ASTExpr {
     Token id;
     List<ASTExpr> param;
 
+    ASTProcCall(Token id) {
+        this.id = id;
+        this.param = new ArrayList<>();
+    }
+
     public String toString() {
-        String str = id.getText();
+        String str = "(" + id.getText();
         for (ASTExpr p : param)
-            str += p.toString();
-        return str;
+            str += " " + p.toString();
+        return str + ")";
     }
 }
