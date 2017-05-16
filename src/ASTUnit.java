@@ -3,8 +3,8 @@ import org.antlr.v4.runtime.*;
 
 /* Derivations of ASTUnit
  * ASTStmtUnit: Statement Unit
- * ASTProcUnit: Definition of Procedure
  * ASTImportUnit: import "blah blah blah"
+ * ASTProcUnit: Definition of Procedure
  */
 public class ASTUnit implements ASTNode { }
 
@@ -21,15 +21,18 @@ class ASTImportUnit extends ASTUnit {
 }
 
 class ASTProcUnit extends ASTUnit {
-    class Param {
-        Token type;
+    static class ParamType {
+        Token id;
+        Token tid;
         boolean reference;
         int dimension;
-        Token id;
     }
 
     Token procName;
     Token returnType;
-    List<Param> param;
-    List<ASTStmt> stmt;
+    List<ParamType> paramType = new ArrayList<>();
+    List<ASTStmt> stmt = new ArrayList<>();
+    public String toString() {
+        return "'toString()' for proc unit is not developed yet.";
+    }
 }

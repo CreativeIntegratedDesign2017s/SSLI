@@ -1,5 +1,4 @@
-import org.antlr.v4.runtime.tree.TerminalNode;
-
+import org.antlr.v4.runtime.tree.*;
 import java.util.*;
 import java.util.List;
 
@@ -24,7 +23,29 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
     public ASTNode visitImport(SimpleParser.ImportContext ctx) {
         return new ASTImportUnit(ctx.STR().getSymbol());
     }
-    // public ASTNode visitProcedure(SimpleParser.ProcedureContext ctx) { return this.visitChildren(ctx); }
+    public ASTNode visitProcedure(SimpleParser.ProcedureContext ctx) {
+        ASTProcUnit unit = new ASTProcUnit();
+        unit.procName = ctx.ID().getSymbol();
+        unit.returnType = (ctx.rtype().VOID() != null) ? null : ctx.rtype().ID().getSymbol();
+
+        SimpleParser.Para_listContext param = ctx.para_list();
+        int count = (param.getChildCount() + 1) / 3;
+        for (int i = 0 ; i < count; i++) {
+            SimpleParser.PtypeContext ptypeCtx = param.ptype(i);
+            ASTProcUnit.ParamType ptype = new ASTProcUnit.ParamType();
+            ptype.id = param.ID(i).getSymbol();
+            ptype.tid = ptypeCtx.ID().getSymbol();
+            ptype.reference = (ptypeCtx.getChildCount() > 1);
+            ptype.dimension = (ptypeCtx.getChildCount() - 1) / 2;
+            unit.paramType.add(ptype);
+        }
+
+        SimpleParser.Stmt_listContext stmtList = ctx.block().stmt_list();
+        for (SimpleParser.StmtContext st : stmtList.stmt())
+            unit.stmt.add((ASTStmt)visit(st));
+
+        return unit;
+    }
 
     /** 8 Rules for Statement **/
     public ASTNode visitEvaluate(SimpleParser.EvaluateContext ctx) {

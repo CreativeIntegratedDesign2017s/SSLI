@@ -20,9 +20,9 @@ class ASTExprStmt extends ASTStmt {
 }
 
 class ASTDeclStmt extends ASTStmt {
+    Token id;
     Token tid;
     List<Integer> size = new ArrayList<>();
-    Token id;
     ASTExpr init;
 
     public String toString() {
@@ -30,9 +30,9 @@ class ASTDeclStmt extends ASTStmt {
         System.out.println(size.size());
         for (Integer i : size)
             str += "[" + i.toString() + "]";
-        str += ")";
         if (init != null)
-            str = "{ " + str + " (asgn " + id.getText() + " " + init.toString() + ") }";
+            str += " " + init.toString();
+        str += ")";
         return str;
     }
 }
