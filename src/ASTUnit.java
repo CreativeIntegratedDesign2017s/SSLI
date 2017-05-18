@@ -6,21 +6,15 @@ import org.antlr.v4.runtime.*;
  * ASTImportUnit: import "blah blah blah"
  * ASTProcUnit: Definition of Procedure
  */
-public class ASTUnit implements ASTNode { }
+interface ASTUnit extends ASTNode { }
 
-class ASTStmtUnit extends ASTUnit {
+class ASTStmtUnit implements ASTUnit {
     ASTStmt stmt;
     ASTStmtUnit(ASTStmt stmt) { this.stmt = stmt; }
-    public String toString() { return stmt.toString(); }
+    public <T> T visit(ASTListener<T> al) { return al.visitStmtUnit(this); }
 }
 
-class ASTImportUnit extends ASTUnit {
-    Token file;
-    ASTImportUnit(Token file) { this.file = file; }
-    public String toString() { return "import " + file.getText(); }
-}
-
-class ASTProcUnit extends ASTUnit {
+class ASTProcUnit implements ASTUnit {
     static class ParamType {
         Token id;
         Token tid;
@@ -32,7 +26,11 @@ class ASTProcUnit extends ASTUnit {
     Token returnType;
     List<ParamType> paramType = new ArrayList<>();
     List<ASTStmt> stmt = new ArrayList<>();
-    public String toString() {
-        return "'toString()' for proc unit is not developed yet.";
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitProcUnit(this); }
+}
+
+class ASTImportUnit implements ASTUnit {
+    Token file;
+    ASTImportUnit(Token file) { this.file = file; }
+    public <T> T visit(ASTListener<T> al) { return al.visitImportUnit(this); }
 }

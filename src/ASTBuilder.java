@@ -1,27 +1,28 @@
 import org.antlr.v4.runtime.tree.*;
 import java.util.*;
-import java.util.List;
 
-interface ASTNode {
-    String toString();
-}
+interface ASTNode { <T> T visit(ASTListener<T> al); }
+
+class ASTPrgm { List<ASTUnit> units = new ArrayList<>(); }
 
 public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
 
-    public List<ASTUnit> prgm = new ArrayList<>();
+    ASTPrgm prgm;
+
+    ASTBuilder(ParseTree tree) {
+        prgm = new ASTPrgm();
+        this.visit(tree);
+    }
 
     public ASTNode visitPrgm(SimpleParser.PrgmContext ctx) {
         for (SimpleParser.UnitContext unit: ctx.unit())
-            prgm.add((ASTUnit)visit(unit));
+            prgm.units.add((ASTUnit)visit(unit));
         return null;
     }
 
     /** 3 Rules for Translation Unit **/
     public ASTNode visitStatement(SimpleParser.StatementContext ctx) {
         return new ASTStmtUnit((ASTStmt)visit(ctx.stmt()));
-    }
-    public ASTNode visitImport(SimpleParser.ImportContext ctx) {
-        return new ASTImportUnit(ctx.STR().getSymbol());
     }
     public ASTNode visitProcedure(SimpleParser.ProcedureContext ctx) {
         ASTProcUnit unit = new ASTProcUnit();
@@ -46,6 +47,9 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
 
         return unit;
     }
+    public ASTNode visitImport(SimpleParser.ImportContext ctx) {
+        return new ASTImportUnit(ctx.STR().getSymbol());
+    }
 
     /** 8 Rules for Statement **/
     public ASTNode visitEvaluate(SimpleParser.EvaluateContext ctx) {
@@ -56,7 +60,7 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
         SimpleParser.TypeContext type = ctx.type();
         stmt.tid = type.ID().getSymbol();
         for (TerminalNode i : type.INT())
-            stmt.size.add(Integer.parseInt(i.getSymbol().getText()));
+            stmt.sizes.add(Integer.parseInt(i.getSymbol().getText()));
         stmt.id = ctx.ID().getSymbol();
         if (ctx.init().getChildCount() == 0)
             stmt.init = null;
@@ -105,16 +109,16 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
         return visit(ctx.expr());
     }
     public ASTNode visitIdentifier(SimpleParser.IdentifierContext ctx) {
-        return new ASTTerm(ASTTerm.Sort.ID, ctx.ID().getSymbol());
+        return new ASTIdentExpr(ctx.ID().getSymbol());
     }
     public ASTNode visitBoolean(SimpleParser.BooleanContext ctx) {
-        return new ASTTerm(ASTTerm.Sort.BOOL, ctx.BOOL().getSymbol());
+        return new ASTPrimeExpr(ctx.BOOL().getSymbol());
     }
     public ASTNode visitInteger(SimpleParser.IntegerContext ctx) {
-        return new ASTTerm(ASTTerm.Sort.INT, ctx.INT().getSymbol());
+        return new ASTPrimeExpr(ctx.INT().getSymbol());
     }
     public ASTNode visitString(SimpleParser.StringContext ctx) {
-        return new ASTTerm(ASTTerm.Sort.STR, ctx.STR().getSymbol());
+        return new ASTPrimeExpr(ctx.STR().getSymbol());
     }
     public ASTNode visitUnaryPM(SimpleParser.UnaryPMContext ctx) {
         return new ASTUnary(ctx.op, (ASTExpr)visit(ctx.expr()));

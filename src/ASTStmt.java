@@ -11,33 +11,24 @@ import org.antlr.v4.runtime.*;
  * ASTReturn: Return Statement
  * ASTNested: Nested Statement
  */
-public class ASTStmt implements ASTNode { }
+interface ASTStmt extends ASTNode { }
 
-class ASTExprStmt extends ASTStmt {
+class ASTExprStmt implements ASTStmt {
     ASTExpr expr;
     ASTExprStmt(ASTExpr expr) { this.expr = expr; }
-    public String toString() { return expr.toString(); }
+    public <T> T visit(ASTListener<T> al) { return al.visitExprStmt(this);}
 }
 
-class ASTDeclStmt extends ASTStmt {
+class ASTDeclStmt implements ASTStmt {
     Token id;
     Token tid;
-    List<Integer> size = new ArrayList<>();
+    List<Integer> sizes = new ArrayList<>();
     ASTExpr init;
 
-    public String toString() {
-        String str = "(decl " + id.getText() + ":" + tid.getText();
-        System.out.println(size.size());
-        for (Integer i : size)
-            str += "[" + i.toString() + "]";
-        if (init != null)
-            str += " " + init.toString();
-        str += ")";
-        return str;
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitDeclStmt(this); }
 }
 
-class ASTAsgnStmt extends ASTStmt {
+class ASTAsgnStmt implements ASTStmt {
     ASTExpr lval;
     ASTExpr rval;
 
@@ -46,12 +37,10 @@ class ASTAsgnStmt extends ASTStmt {
         this.rval = rval;
     }
 
-    public String toString() {
-        return "(asgn " + lval.toString() + " " + rval.toString() + ")";
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitAsgnStmt(this); }
 }
 
-class ASTIfElse extends ASTStmt {
+class ASTIfElse implements ASTStmt {
     ASTExpr cond;
     List<ASTStmt> thenStmt;
     List<ASTStmt> elseStmt;
@@ -62,19 +51,10 @@ class ASTIfElse extends ASTStmt {
         elseStmt = new ArrayList<>();
     }
 
-    public String toString() {
-        String code = "(cond " + cond.toString() + " {";
-        for (ASTStmt stmt : thenStmt)
-            code += " " + stmt.toString();
-        code += " } {";
-        for (ASTStmt stmt : elseStmt)
-            code += " " + stmt.toString();
-        code += " })";
-        return code;
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitIfElse(this); }
 }
 
-class ASTDoWhile extends ASTStmt {
+class ASTDoWhile implements ASTStmt {
     ASTExpr cond;
     List<ASTStmt> stmt;
 
@@ -83,16 +63,10 @@ class ASTDoWhile extends ASTStmt {
         stmt = new ArrayList<>();
     }
 
-    public String toString() {
-        String code = "(until " + cond.toString() + " {";
-        for (ASTStmt st : stmt)
-            code += " " + st.toString();
-        code += " })";
-        return code;
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitDoWhile(this); }
 }
 
-class ASTWhileDo extends ASTStmt {
+class ASTWhileDo implements ASTStmt {
     ASTExpr cond;
     List<ASTStmt> stmt;
 
@@ -101,31 +75,19 @@ class ASTWhileDo extends ASTStmt {
         stmt = new ArrayList<>();
     }
 
-    public String toString() {
-        String code = "(while " + cond.toString() + " {";
-        for (ASTStmt st : stmt)
-            code += " " + st.toString();
-        code += " })";
-        return code;
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitWhileDo(this); }
 }
 
-class ASTReturn extends ASTStmt {
+class ASTReturn implements ASTStmt {
     ASTExpr expr;
     ASTReturn(ASTExpr expr) { this.expr = expr; }
-    public String toString() { return "(return " + expr.toString() + ")"; }
+    public <T> T visit(ASTListener<T> al) { return al.visitReturn(this); }
 }
 
-class ASTNested extends ASTStmt {
+class ASTNested implements ASTStmt {
     List<ASTStmt> stmt;
 
     ASTNested() { stmt = new ArrayList<>(); }
 
-    public String toString() {
-        String code = "{";
-        for (ASTStmt st : stmt)
-            code += " " + st.toString();
-        code += " }";
-        return code;
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitNested(this); }
 }

@@ -2,31 +2,33 @@ import java.util.*;
 import org.antlr.v4.runtime.*;
 
 /* Derivations of ASTExpr
- * ASTTerm: Terminal Expressions
+ * ASTPrimeExpr: Bool, INT, STR
+ * ASTIdentExpr: Identifier
  * ASTUnary: Unary Expressions
  * ASTBinary: Binary Expressions
  * ASTSubscript: Subscript Expression
  * ASTSubstring: Substring Expression
  * ASTProcCall: Procedure Call Expression
  */
-public class ASTExpr implements ASTNode { }
+interface ASTExpr extends ASTNode { }
 
-class ASTTerm extends ASTExpr {
-    enum Sort { ID, BOOL, INT, STR }
-    Sort sort;
+class ASTIdentExpr implements ASTExpr {
     Token token;
 
-    ASTTerm(Sort sort, Token token) {
-        this.sort = sort;
-        this.token = token;
-    }
+    ASTIdentExpr(Token token) { this.token = token; }
 
-    public String toString() {
-        return token.getText();
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitIdentExpr(this); }
 }
 
-class ASTUnary extends ASTExpr {
+class ASTPrimeExpr implements ASTExpr {
+    Token token;
+
+    ASTPrimeExpr(Token token) { this.token = token; }
+
+    public <T> T visit(ASTListener<T> al) { return al.visitPrimeExpr(this); }
+}
+
+class ASTUnary implements ASTExpr {
     Token op;
     ASTExpr oprnd;
 
@@ -35,12 +37,10 @@ class ASTUnary extends ASTExpr {
         this.oprnd = oprnd;
     }
 
-    public String toString() {
-        return "(" + op.getText() + " " + oprnd.toString() + ")";
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitUnary(this); }
 }
 
-class ASTBinary extends ASTExpr {
+class ASTBinary implements ASTExpr {
     Token op;
     ASTExpr oprnd1;
     ASTExpr oprnd2;
@@ -51,12 +51,10 @@ class ASTBinary extends ASTExpr {
         this.oprnd2 = oprnd2;
     }
 
-    public String toString() {
-        return "(" + op.getText() + " " + oprnd1.toString() + " " + oprnd2.toString() + ")";
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitBinary(this); }
 }
 
-class ASTSubscript extends ASTExpr {
+class ASTSubscript implements ASTExpr {
     ASTExpr map;
     ASTExpr index;
 
@@ -65,12 +63,10 @@ class ASTSubscript extends ASTExpr {
         this.index = index;
     }
 
-    public String toString() {
-        return map.toString() + "[" + index.toString() + "]";
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitSubscript(this); }
 }
 
-class ASTSubstring extends ASTExpr {
+class ASTSubstring implements ASTExpr {
     ASTExpr str;
     ASTExpr index1;
     ASTExpr index2;
@@ -81,12 +77,10 @@ class ASTSubstring extends ASTExpr {
         this.index2 = index2;
     }
 
-    public String toString() {
-        return str.toString() + "[" + index1.toString() + ":" + index2.toString() + "]";
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitSubstring(this); }
 }
 
-class ASTProcCall extends ASTExpr {
+class ASTProcCall implements ASTExpr {
     Token id;
     List<ASTExpr> param;
 
@@ -95,10 +89,5 @@ class ASTProcCall extends ASTExpr {
         this.param = new ArrayList<>();
     }
 
-    public String toString() {
-        String str = "(" + id.getText();
-        for (ASTExpr p : param)
-            str += " " + p.toString();
-        return str + ")";
-    }
+    public <T> T visit(ASTListener<T> al) { return al.visitProcCall(this); }
 }

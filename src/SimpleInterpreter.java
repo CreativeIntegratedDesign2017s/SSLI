@@ -126,10 +126,9 @@ public class SimpleInterpreter {
         }
 
         // Build AST
-        ASTBuilder ab = new ASTBuilder();
-        ab.visit(tree);
-
-        System.out.println(ab.prgm.get(0).toString());
+        ASTBuilder ab = new ASTBuilder(tree);
+        ASTtoSTR as = new ASTtoSTR();
+        System.out.println(as.visit(ab.prgm));
 
         totalLines += code.split("\r\n|\r|\n", -1).length - 1;
     }
