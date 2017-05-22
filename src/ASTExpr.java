@@ -1,31 +1,41 @@
 import java.util.*;
 import org.antlr.v4.runtime.*;
 
-/* Derivations of ASTExpr
- * ASTPrimeExpr: Bool, INT, STR
- * ASTIdentExpr: Identifier
- * ASTUnary: Unary Expressions
- * ASTBinary: Binary Expressions
- * ASTSubscript: Subscript Expression
- * ASTSubstring: Substring Expression
- * ASTProcCall: Procedure Call Expression
- */
-interface ASTExpr extends ASTNode { }
-
-class ASTIdentExpr implements ASTExpr {
-    Token token;
-
-    ASTIdentExpr(Token token) { this.token = token; }
-
-    public <T> T visit(ASTListener<T> al) { return al.visitIdentExpr(this); }
+interface ASTExpr extends ASTNode {
+    /* ASTExpr Derivations */
+    // ASTConstant			BOOL, INT, STR
+    // ASTVariable			ID
+    // ASTUnary				+, -, !
+    // ASTBinary			+, -, *, /, ^, ...
+    // ASTSubscript			arr[index]
+    // ASTSubstring			str[index1 : index2]
+    // ASTProcCall			pid(...)
 }
 
-class ASTPrimeExpr implements ASTExpr {
+class ASTConstant implements ASTExpr {
     Token token;
 
-    ASTPrimeExpr(Token token) { this.token = token; }
+    ASTConstant(Token token) {
+        this.token = token;
+    }
 
-    public <T> T visit(ASTListener<T> al) { return al.visitPrimeExpr(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitConstant(this);
+    }
+}
+
+class ASTVariable implements ASTExpr {
+    Token token;
+
+    ASTVariable(Token token) {
+        this.token = token;
+    }
+
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitVariable(this);
+    }
 }
 
 class ASTUnary implements ASTExpr {
@@ -37,7 +47,10 @@ class ASTUnary implements ASTExpr {
         this.oprnd = oprnd;
     }
 
-    public <T> T visit(ASTListener<T> al) { return al.visitUnary(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitUnary(this);
+    }
 }
 
 class ASTBinary implements ASTExpr {
@@ -51,19 +64,25 @@ class ASTBinary implements ASTExpr {
         this.oprnd2 = oprnd2;
     }
 
-    public <T> T visit(ASTListener<T> al) { return al.visitBinary(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitBinary(this);
+    }
 }
 
 class ASTSubscript implements ASTExpr {
-    ASTExpr map;
+    ASTExpr arr;
     ASTExpr index;
 
-    ASTSubscript(ASTExpr map, ASTExpr index) {
-        this.map = map;
+    ASTSubscript(ASTExpr arr, ASTExpr index) {
+        this.arr = arr;
         this.index = index;
     }
 
-    public <T> T visit(ASTListener<T> al) { return al.visitSubscript(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitSubscript(this);
+    }
 }
 
 class ASTSubstring implements ASTExpr {
@@ -77,17 +96,23 @@ class ASTSubstring implements ASTExpr {
         this.index2 = index2;
     }
 
-    public <T> T visit(ASTListener<T> al) { return al.visitSubstring(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitSubstring(this);
+    }
 }
 
 class ASTProcCall implements ASTExpr {
-    Token id;
+    Token pid;
     List<ASTExpr> param;
 
-    ASTProcCall(Token id) {
-        this.id = id;
+    ASTProcCall(Token pid) {
+        this.pid = pid;
         this.param = new ArrayList<>();
     }
 
-    public <T> T visit(ASTListener<T> al) { return al.visitProcCall(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitProcCall(this);
+    }
 }

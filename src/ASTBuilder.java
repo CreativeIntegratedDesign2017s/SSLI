@@ -1,44 +1,34 @@
 import org.antlr.v4.runtime.tree.*;
-import java.util.*;
-
-interface ASTNode { <T> T visit(ASTListener<T> al); }
-
-class ASTPrgm { List<ASTUnit> units = new ArrayList<>(); }
 
 public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
 
-    ASTPrgm prgm;
-
-    ASTBuilder(ParseTree tree) {
-        prgm = new ASTPrgm();
-        this.visit(tree);
-    }
-
     public ASTNode visitPrgm(SimpleParser.PrgmContext ctx) {
+        ASTPrgm prgm = new ASTPrgm();
         for (SimpleParser.UnitContext unit: ctx.unit())
             prgm.units.add((ASTUnit)visit(unit));
-        return null;
+        return prgm;
     }
 
-    /** 3 Rules for Translation Unit **/
+    /** Rules for Translation Unit **/
     public ASTNode visitStatement(SimpleParser.StatementContext ctx) {
-        return new ASTStmtUnit((ASTStmt)visit(ctx.stmt()));
+        ASTStmt stmt = (ASTStmt)visit(ctx.stmt());
+        return new ASTStmtUnit(stmt);
     }
     public ASTNode visitProcedure(SimpleParser.ProcedureContext ctx) {
         ASTProcUnit unit = new ASTProcUnit();
-        unit.procName = ctx.ID().getSymbol();
+        unit.pid = ctx.ID().getSymbol();
         unit.returnType = (ctx.rtype().VOID() != null) ? null : ctx.rtype().ID().getSymbol();
 
         SimpleParser.Para_listContext param = ctx.para_list();
         int count = (param.getChildCount() + 1) / 3;
         for (int i = 0 ; i < count; i++) {
             SimpleParser.PtypeContext ptypeCtx = param.ptype(i);
-            ASTProcUnit.ParamType ptype = new ASTProcUnit.ParamType();
-            ptype.id = param.ID(i).getSymbol();
+            ASTProcUnit.ParaType ptype = new ASTProcUnit.ParaType();
+            ptype.var = param.ID(i).getSymbol();
             ptype.tid = ptypeCtx.ID().getSymbol();
-            ptype.reference = (ptypeCtx.getChildCount() > 1);
-            ptype.dimension = (ptypeCtx.getChildCount() - 1) / 2;
-            unit.paramType.add(ptype);
+            ptype.dim = (ptypeCtx.getChildCount() - 1) / 2;
+            ptype.ref = (ptypeCtx.getChildCount() > 1);
+            unit.type.add(ptype);
         }
 
         SimpleParser.Stmt_listContext stmtList = ctx.block().stmt_list();
@@ -47,55 +37,56 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
 
         return unit;
     }
-    public ASTNode visitImport(SimpleParser.ImportContext ctx) {
-        return new ASTImportUnit(ctx.STR().getSymbol());
-    }
 
     /** 8 Rules for Statement **/
     public ASTNode visitEvaluate(SimpleParser.EvaluateContext ctx) {
-        return new ASTExprStmt((ASTExpr) visit(ctx.expr()));
+        ASTExpr expr = (ctx.expr() == null) ? null : (ASTExpr)visit(ctx.expr());
+        return new ASTEval(expr);
     }
     public ASTNode visitDeclare(SimpleParser.DeclareContext ctx) {
-        ASTDeclStmt stmt = new ASTDeclStmt();
         SimpleParser.TypeContext type = ctx.type();
-        stmt.tid = type.ID().getSymbol();
+        ASTDecl stmt = new ASTDecl();
+        stmt.type.tid = type.ID().getSymbol();
         for (TerminalNode i : type.INT())
-            stmt.sizes.add(Integer.parseInt(i.getSymbol().getText()));
-        stmt.id = ctx.ID().getSymbol();
-        if (ctx.init().getChildCount() == 0)
-            stmt.init = null;
-        else
-            stmt.init = (ASTExpr)visit(ctx.init().expr());
+            stmt.type.size.add(Integer.parseInt(i.getSymbol().getText()));
+        stmt.var = ctx.ID().getSymbol();
+        stmt.init = (ctx.init().getChildCount() == 0) ? null : (ASTExpr)visit(ctx.init().expr());
         return stmt;
     }
     public ASTNode visitAssign(SimpleParser.AssignContext ctx) {
-        return new ASTAsgnStmt((ASTExpr)visit(ctx.expr(0)), (ASTExpr)visit(ctx.expr(1)));
+        ASTExpr lval = (ASTExpr)visit(ctx.expr(0));
+        ASTExpr rval = (ASTExpr)visit(ctx.expr(1));
+        return new ASTAsgn(lval, rval);
     }
     public ASTNode visitIfElse(SimpleParser.IfElseContext ctx) {
-        ASTIfElse cond = new ASTIfElse((ASTExpr)visit(ctx.expr()));
+        ASTCond stmt = new ASTCond();
+        stmt.cond = (ASTExpr)visit(ctx.expr());
         SimpleParser.Stmt_listContext thenStmt = ctx.stmt_list(0);
         for (SimpleParser.StmtContext st : thenStmt.stmt())
-            cond.thenStmt.add((ASTStmt)visit(st));
+            stmt.thenStmt.add((ASTStmt)visit(st));
         SimpleParser.Stmt_listContext elseStmt = ctx.stmt_list(1);
         if (elseStmt != null)
             for (SimpleParser.StmtContext st : elseStmt.stmt())
-                cond.elseStmt.add((ASTStmt)visit(st));
-        return cond;
+                stmt.elseStmt.add((ASTStmt)visit(st));
+        return stmt;
     }
     public ASTNode visitDoWhile(SimpleParser.DoWhileContext ctx) {
-        ASTDoWhile loop = new ASTDoWhile((ASTExpr)visit(ctx.expr()));
+        ASTUntil stmt = new ASTUntil();
+        stmt.cond = (ASTExpr)visit(ctx.expr());
         for (SimpleParser.StmtContext st : ctx.stmt_list().stmt())
-            loop.stmt.add((ASTStmt)visit(st));
-        return loop;
+            stmt.loop.add((ASTStmt)visit(st));
+        return stmt;
     }
     public ASTNode visitWhileDo(SimpleParser.WhileDoContext ctx) {
-        ASTWhileDo loop = new ASTWhileDo((ASTExpr)visit(ctx.expr()));
+        ASTWhile stmt = new ASTWhile();
+        stmt.cond = (ASTExpr)visit(ctx.expr());
         for (SimpleParser.StmtContext st : ctx.stmt_list().stmt())
-            loop.stmt.add((ASTStmt)visit(st));
-        return loop;
+            stmt.loop.add((ASTStmt)visit(st));
+        return stmt;
     }
     public ASTNode visitReturn(SimpleParser.ReturnContext ctx) {
-        return new ASTReturn((ASTExpr)visit(ctx.expr()));
+        ASTExpr val = (ctx.expr() == null) ? null : (ASTExpr)visit(ctx.expr());
+        return new ASTReturn(val);
     }
     public ASTNode visitNested(SimpleParser.NestedContext ctx) {
         ASTNested nest = new ASTNested();
@@ -108,17 +99,17 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
     public ASTNode visitBracket(SimpleParser.BracketContext ctx) {
         return visit(ctx.expr());
     }
-    public ASTNode visitIdentifier(SimpleParser.IdentifierContext ctx) {
-        return new ASTIdentExpr(ctx.ID().getSymbol());
-    }
     public ASTNode visitBoolean(SimpleParser.BooleanContext ctx) {
-        return new ASTPrimeExpr(ctx.BOOL().getSymbol());
+        return new ASTConstant(ctx.BOOL().getSymbol());
     }
     public ASTNode visitInteger(SimpleParser.IntegerContext ctx) {
-        return new ASTPrimeExpr(ctx.INT().getSymbol());
+        return new ASTConstant(ctx.INT().getSymbol());
     }
     public ASTNode visitString(SimpleParser.StringContext ctx) {
-        return new ASTPrimeExpr(ctx.STR().getSymbol());
+        return new ASTConstant(ctx.STR().getSymbol());
+    }
+    public ASTNode visitIdentifier(SimpleParser.IdentifierContext ctx) {
+        return new ASTVariable(ctx.ID().getSymbol());
     }
     public ASTNode visitUnaryPM(SimpleParser.UnaryPMContext ctx) {
         return new ASTUnary(ctx.op, (ASTExpr)visit(ctx.expr()));

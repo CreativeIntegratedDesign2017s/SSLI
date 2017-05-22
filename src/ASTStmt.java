@@ -1,93 +1,111 @@
 import java.util.*;
 import org.antlr.v4.runtime.*;
 
-/* Derivations of ASTStmt
- * ASTExprStmt: ProcCall Statement
- * ASTDeclStmt: Declaration Statement
- * ASTAsgnStmt: Assignment Statement
- * ASTIfElse: If-Else Statement
- * ASTDoWhile: Do-While Statement
- * ASTWhileDo: While-Do Statement
- * ASTReturn: Return Statement
- * ASTNested: Nested Statement
- */
-interface ASTStmt extends ASTNode { }
-
-class ASTExprStmt implements ASTStmt {
-    ASTExpr expr;
-    ASTExprStmt(ASTExpr expr) { this.expr = expr; }
-    public <T> T visit(ASTListener<T> al) { return al.visitExprStmt(this);}
+interface ASTStmt extends ASTNode {
+    /* ASTStmt Derivations */
+    // ASTEval				Expression, 'expr' could be null
+    // ASTDecl				Declaration, 'init' could be null
+    // ASTAsgn				Assignment
+    // ASTCond				If-Then-Else
+    // ASTUntil				Do-While Loop
+    // ASTWhile				While-Do Loop
+    // ASTReturn			Return Statement, 'val' could be null
+    // ASTNested			Nested Statement
 }
 
-class ASTDeclStmt implements ASTStmt {
-    Token id;
-    Token tid;
-    List<Integer> sizes = new ArrayList<>();
+class ASTEval implements ASTStmt {
+    ASTExpr expr;
+
+    ASTEval(ASTExpr expr) {
+        this.expr = expr;
+    }
+
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitEval(this);
+    }
+}
+
+class ASTDecl implements ASTStmt {
+    static class DeclType {
+        Token tid;
+        List<Integer> size = new ArrayList<>();
+    }
+
+    DeclType type;
+    Token var;
     ASTExpr init;
 
-    public <T> T visit(ASTListener<T> al) { return al.visitDeclStmt(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitDecl(this);
+    }
 }
 
-class ASTAsgnStmt implements ASTStmt {
+class ASTAsgn implements ASTStmt {
     ASTExpr lval;
     ASTExpr rval;
 
-    ASTAsgnStmt(ASTExpr lval, ASTExpr rval) {
+    ASTAsgn(ASTExpr lval, ASTExpr rval) {
         this.lval = lval;
         this.rval = rval;
     }
 
-    public <T> T visit(ASTListener<T> al) { return al.visitAsgnStmt(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitAsgn(this);
+    }
 }
 
-class ASTIfElse implements ASTStmt {
+class ASTCond implements ASTStmt {
     ASTExpr cond;
-    List<ASTStmt> thenStmt;
-    List<ASTStmt> elseStmt;
+    List<ASTStmt> thenStmt = new ArrayList<>();
+    List<ASTStmt> elseStmt = new ArrayList<>();
 
-    ASTIfElse(ASTExpr cond) {
-        this.cond = cond;
-        thenStmt = new ArrayList<>();
-        elseStmt = new ArrayList<>();
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitCond(this);
     }
-
-    public <T> T visit(ASTListener<T> al) { return al.visitIfElse(this); }
 }
 
-class ASTDoWhile implements ASTStmt {
+class ASTUntil implements ASTStmt {
     ASTExpr cond;
-    List<ASTStmt> stmt;
+    List<ASTStmt> loop = new ArrayList<>();
 
-    ASTDoWhile(ASTExpr cond) {
-        this.cond = cond;
-        stmt = new ArrayList<>();
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitUntil(this);
     }
-
-    public <T> T visit(ASTListener<T> al) { return al.visitDoWhile(this); }
 }
 
-class ASTWhileDo implements ASTStmt {
+class ASTWhile implements ASTStmt {
     ASTExpr cond;
-    List<ASTStmt> stmt;
+    List<ASTStmt> loop = new ArrayList<>();
 
-    ASTWhileDo(ASTExpr cond) {
-        this.cond = cond;
-        stmt = new ArrayList<>();
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitWhile(this);
     }
-
-    public <T> T visit(ASTListener<T> al) { return al.visitWhileDo(this); }
 }
 
 class ASTReturn implements ASTStmt {
-    ASTExpr expr;
-    ASTReturn(ASTExpr expr) { this.expr = expr; }
-    public <T> T visit(ASTListener<T> al) { return al.visitReturn(this); }
+    ASTExpr val;
+
+    ASTReturn(ASTExpr val) {
+        this.val = val;
+    }
+
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitReturn(this);
+    }
 }
 
 class ASTNested implements ASTStmt {
-    List<ASTStmt> stmt;
+    List<ASTStmt> stmt = new ArrayList<>();
 
-    ASTNested() { stmt = new ArrayList<>(); }
-
-    public <T> T visit(ASTListener<T> al) { return al.visitNested(this); }
+    @Override public <Type>
+    Type visit(ASTListener<Type> al) {
+        return al.visitNested(this);
+    }
 }
