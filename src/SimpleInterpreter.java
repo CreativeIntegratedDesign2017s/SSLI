@@ -129,7 +129,7 @@ public class SimpleInterpreter {
         ASTBuilder ab = new ASTBuilder();
         ASTPrgm prgm = (ASTPrgm) ab.visit(tree);
 
-        ASTGraphViz gv = new ASTGraphViz();
+        ASTGraphLog gv = new ASTGraphLog();
         gv.visitPrgm(prgm);
 
         totalLines += code.split("\r\n|\r|\n", -1).length - 1;

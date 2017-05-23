@@ -32,7 +32,7 @@ class ASTDecl implements ASTStmt {
         List<Integer> size = new ArrayList<>();
     }
 
-    DeclType type;
+    DeclType type = new DeclType();
     Token var;
     ASTExpr init;
 
