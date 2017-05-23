@@ -11,7 +11,13 @@ public class ASTGraphLog extends ASTListener<Object> {
     public Object visitConstant(ASTConstant node)	{
         int curNode = numNode++;
         try {
-            bw.write("\t" + String.valueOf(curNode) + " [shape=record, label=\"" + node.token.getText() + "\"]");
+            if (node.token.getType() == SimpleParser.STR) {
+                String str = node.token.getText();
+                str = str.substring(1, node.token.getText().length() - 1);
+                bw.write("\t" + String.valueOf(curNode) + " [shape=record, label=\"\\\"" + str + "\\\"\"]\n");
+            }
+            else
+                bw.write("\t" + String.valueOf(curNode) + " [shape=record, label=\"" + node.token.getText() + "\"]\n");
         }
         catch (Exception e) { System.err.println(e); }
         return null;
@@ -19,16 +25,71 @@ public class ASTGraphLog extends ASTListener<Object> {
     public Object visitVariable(ASTVariable node)	{
         int curNode = numNode++;
         try {
-            bw.write("\t" + String.valueOf(curNode) + " [shape=record, label=\"" + node.token.getText() + "\"]");
+            bw.write("\t" + String.valueOf(curNode) + " [shape=record, label=\"" + node.token.getText() + "\"]\n");
         }
         catch (Exception e) { System.err.println(e); }
         return null;
     }
-    public Object visitUnary(ASTUnary node)			{ return null; }
-    public Object visitBinary(ASTBinary node)		{ return null; }
-    public Object visitSubscript(ASTSubscript node)	{ return null; }
-    public Object visitSubstring(ASTSubstring node)	{ return null; }
-    public Object visitProcCall(ASTProcCall node)	{ return null; }
+    public Object visitUnary(ASTUnary node)			{
+        int curNode = numNode++;
+        try {
+            bw.write("\t" + String.valueOf(curNode) + " [label=\"" + node.op.getText() + "\"]\n");
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.oprnd.visit(this);
+        }
+        catch (Exception e) { System.err.println(e); }
+        return null;
+    }
+    public Object visitBinary(ASTBinary node)		{
+        int curNode = numNode++;
+        try {
+            bw.write("\t" + String.valueOf(curNode) + " [label=\"" + node.op.getText() + "\"]\n");
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.oprnd1.visit(this);
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.oprnd2.visit(this);
+        }
+        catch (Exception e) { System.err.println(e); }
+        return null;
+    }
+    public Object visitSubscript(ASTSubscript node)	{
+        int curNode = numNode++;
+        try {
+            bw.write("\t" + String.valueOf(curNode) + " [label=\"arr[index]\"]\n");
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.arr.visit(this);
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.index.visit(this);
+        }
+        catch (Exception e) { System.err.println(e); }
+        return null;
+    }
+    public Object visitSubstring(ASTSubstring node)	{
+        int curNode = numNode++;
+        try {
+            bw.write("\t" + String.valueOf(curNode) + " [label=\"str[idx1:idx2]\"]\n");
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.str.visit(this);
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.index1.visit(this);
+            bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+            node.index2.visit(this);
+        }
+        catch (Exception e) { System.err.println(e); }
+        return null;
+    }
+    public Object visitProcCall(ASTProcCall node)	{
+        int curNode = numNode++;
+        try {
+            bw.write("\t" + String.valueOf(curNode) + " [label=\"call '" + node.pid.getText() + "'\"]\n");
+            for (ASTExpr argu : node.param) {
+                bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
+                argu.visit(this);
+            }
+        }
+        catch (Exception e) { System.err.println(e); }
+        return null;
+    }
 
     public Object visitEval(ASTEval node)			{
         int curNode = numNode++;

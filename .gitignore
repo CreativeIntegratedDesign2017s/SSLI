@@ -1,6 +1,6 @@
 # Project Config
-.idea
-.log
+*.idea
+*.log
 out
 gen
 
