@@ -38,6 +38,16 @@ class Operand {
             this.val = Integer.valueOf(str.substring(0, str.length() - 1));
         }
     }
+
+    /*
+     Get value of an operand regardless of its mode(Register or Constant
+     */
+    Object getValue(Object[] Register) {
+        if(this.mode == AddrMode.REGISTER) {
+            return Register[(int) this.val];
+        }
+        return this.val;
+    }
 }
 
 class Instruction {
@@ -94,9 +104,47 @@ class Instruction {
         }
         return inst;
     }
+
+    void run(Object[] Register) {}
 }
 
 class InstAddr0 extends Instruction { }
 class InstAddr1 extends Instruction { Operand A; }
 class InstAddr2 extends Instruction { Operand A, B; }
-class InstAddr3 extends Instruction { Operand A, B, C; }
+class InstAddr3 extends Instruction {
+    Operand A, B, C;
+
+    @Override
+    void run(Object[] Register) {
+        try {
+            if (A.mode == Operand.AddrMode.REGISTER) {
+                switch (this.op) {
+                    case ADD:
+                        Register[(int) A.val] = Math.addExact((int) B.getValue(Register), (int) C.getValue(Register));
+                        break;
+                    case SUB:
+                        Register[(int) A.val] = Math.subtractExact((int) B.getValue(Register), (int) C.getValue(Register));
+                        break;
+                    case MUL:
+                        Register[(int) A.val] = Math.multiplyExact((int) B.getValue(Register), (int) C.getValue(Register));
+                        break;
+                    case DIV:
+                        Register[(int) A.val] = Math.floorDiv((int) B.getValue(Register), (int) C.getValue(Register));
+                        break;
+                    case POW:
+                        Register[(int) A.val] = Math.pow((int) B.getValue(Register), (int) C.getValue(Register));
+                        break;
+                }
+            }
+            else {
+                throw new Exception("Wrong Destination Type");
+            }
+        }
+        catch(Exception exc) {
+            if(exc instanceof ArithmeticException) { /* TODO */ }   // catches overflow, underflow and div by 0s
+            else if(exc instanceof ArrayIndexOutOfBoundsException) { /* TODO */ }
+            else { /* TODO */ }
+        }
+    }
+
+}
