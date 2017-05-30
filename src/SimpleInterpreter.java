@@ -169,9 +169,9 @@ public class SimpleInterpreter {
                 }
             }
 
-        // Declarations Confirmed
-        symTable.commit();
-        symTable.print();
+            // Declarations Confirmed
+            symTable.commit();
+            symTable.print();
 
             // IR Code Generation
             IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);

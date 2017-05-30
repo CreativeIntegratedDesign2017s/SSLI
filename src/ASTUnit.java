@@ -1,16 +1,20 @@
 import java.util.*;
 import org.antlr.v4.runtime.*;
 
-interface ASTUnit extends ASTNode {
+abstract class ASTUnit extends ASTNode {
+    ASTUnit(ParserRuleContext ctx) {
+        super(ctx);
+    }
     /* ASTUnit Derivations */
     // ASTStmtUnit		Statement Unit
     // ASTProcUnit		Procedure, 'returnType' could be null
 }
 
-class ASTStmtUnit implements ASTUnit {
+class ASTStmtUnit extends ASTUnit {
     ASTStmt stmt;
 
-    ASTStmtUnit(ASTStmt stmt) {
+    ASTStmtUnit(ParserRuleContext ctx, ASTStmt stmt) {
+        super(ctx);
         this.stmt = stmt;
     }
 
@@ -18,9 +22,16 @@ class ASTStmtUnit implements ASTUnit {
     Type visit(ASTListener<Type> al) {
         return al.visitStmtUnit(this);
     }
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(stmt);
+    }
 }
 
-class ASTProcUnit implements ASTUnit {
+class ASTProcUnit extends ASTUnit {
+    ASTProcUnit(ParserRuleContext ctx) {
+        super(ctx);
+    }
     static class ParaType {
         Token		var;
         Token		tid;
@@ -31,10 +42,14 @@ class ASTProcUnit implements ASTUnit {
     Token returnType;
     Token pid;
     List<ParaType> type = new ArrayList<>();
-    List<ASTStmt> stmt = new ArrayList<>();
+    ASTStmtList stmtList;
 
     @Override public <Type>
     Type visit(ASTListener<Type> al) {
         return al.visitProcUnit(this);
+    }
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(stmtList);
     }
 }

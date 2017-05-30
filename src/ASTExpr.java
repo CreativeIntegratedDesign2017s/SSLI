@@ -1,7 +1,10 @@
 import java.util.*;
 import org.antlr.v4.runtime.*;
 
-interface ASTExpr extends ASTNode {
+abstract class ASTExpr extends ASTNode {
+    ASTExpr(ParserRuleContext ctx) {
+        super(ctx);
+    }
     /* ASTExpr Derivations */
     // ASTConstant			BOOL, INT, STR
     // ASTVariable			ID
@@ -12,10 +15,11 @@ interface ASTExpr extends ASTNode {
     // ASTProcCall			pid(...)
 }
 
-class ASTConstant implements ASTExpr {
+class ASTConstant extends ASTExpr {
     Token token;
 
-    ASTConstant(Token token) {
+    ASTConstant(ParserRuleContext ctx, Token token) {
+        super(ctx);
         this.token = token;
     }
 
@@ -23,12 +27,16 @@ class ASTConstant implements ASTExpr {
     Type visit(ASTListener<Type> al) {
         return al.visitConstant(this);
     }
+    @Override
+    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    }
 }
 
-class ASTVariable implements ASTExpr {
+class ASTVariable extends ASTExpr {
     Token token;
 
-    ASTVariable(Token token) {
+    ASTVariable(ParserRuleContext ctx, Token token) {
+        super(ctx);
         this.token = token;
     }
 
@@ -36,13 +44,17 @@ class ASTVariable implements ASTExpr {
     Type visit(ASTListener<Type> al) {
         return al.visitVariable(this);
     }
+    @Override
+    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    }
 }
 
-class ASTUnary implements ASTExpr {
+class ASTUnary extends ASTExpr {
     Token op;
     ASTExpr oprnd;
 
-    ASTUnary(Token op, ASTExpr oprnd) {
+    ASTUnary(ParserRuleContext ctx, Token op, ASTExpr oprnd) {
+        super(ctx);
         this.op = op;
         this.oprnd = oprnd;
     }
@@ -51,14 +63,19 @@ class ASTUnary implements ASTExpr {
     Type visit(ASTListener<Type> al) {
         return al.visitUnary(this);
     }
+    @Override
+    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(oprnd);
+    }
 }
 
-class ASTBinary implements ASTExpr {
+class ASTBinary extends ASTExpr {
     Token op;
     ASTExpr oprnd1;
     ASTExpr oprnd2;
 
-    ASTBinary(Token op, ASTExpr oprnd1, ASTExpr oprnd2) {
+    ASTBinary(ParserRuleContext ctx, Token op, ASTExpr oprnd1, ASTExpr oprnd2) {
+        super(ctx);
         this.op = op;
         this.oprnd1 = oprnd1;
         this.oprnd2 = oprnd2;
@@ -68,13 +85,19 @@ class ASTBinary implements ASTExpr {
     Type visit(ASTListener<Type> al) {
         return al.visitBinary(this);
     }
+    @Override
+    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(oprnd1);
+        iterFunc.apply(oprnd2);
+    }
 }
 
-class ASTSubscript implements ASTExpr {
+class ASTSubscript extends ASTExpr {
     ASTExpr arr;
     ASTExpr index;
 
-    ASTSubscript(ASTExpr arr, ASTExpr index) {
+    ASTSubscript(ParserRuleContext ctx, ASTExpr arr, ASTExpr index) {
+        super(ctx);
         this.arr = arr;
         this.index = index;
     }
@@ -82,15 +105,21 @@ class ASTSubscript implements ASTExpr {
     @Override public <Type>
     Type visit(ASTListener<Type> al) {
         return al.visitSubscript(this);
+    }@Override
+    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(arr);
+        iterFunc.apply(index);
     }
+
 }
 
-class ASTSubstring implements ASTExpr {
+class ASTSubstring extends ASTExpr {
     ASTExpr str;
     ASTExpr index1;
     ASTExpr index2;
 
-    ASTSubstring(ASTExpr str, ASTExpr index1, ASTExpr index2) {
+    ASTSubstring(ParserRuleContext ctx, ASTExpr str, ASTExpr index1, ASTExpr index2) {
+        super(ctx);
         this.str = str;
         this.index1 = index1;
         this.index2 = index2;
@@ -100,13 +129,20 @@ class ASTSubstring implements ASTExpr {
     Type visit(ASTListener<Type> al) {
         return al.visitSubstring(this);
     }
+    @Override
+    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(str);
+        iterFunc.apply(index1);
+        iterFunc.apply(index2);
+    }
 }
 
-class ASTProcCall implements ASTExpr {
+class ASTProcCall extends ASTExpr {
     Token pid;
     List<ASTExpr> param;
 
-    ASTProcCall(Token pid) {
+    ASTProcCall(ParserRuleContext ctx, Token pid) {
+        super(ctx);
         this.pid = pid;
         this.param = new ArrayList<>();
     }
@@ -114,5 +150,10 @@ class ASTProcCall implements ASTExpr {
     @Override public <Type>
     Type visit(ASTListener<Type> al) {
         return al.visitProcCall(this);
+    }
+    @Override
+    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        for (ASTNode n : param)
+            iterFunc.apply(n);
     }
 }

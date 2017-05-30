@@ -1,6 +1,3 @@
-import org.antlr.v4.runtime.ParserRuleContext;
-import org.antlr.v4.runtime.tree.ParseTreeProperty;
-
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -148,14 +145,14 @@ class SymbolTable {
 
     private Deque<Scope> scopeStack = new ArrayDeque<>();
     private Map<String, SingleType> singleTypes = new HashMap<>();
-    private ParseTreeProperty<Symbol> ctxSymbolHash = new ParseTreeProperty<>();
-    private ParseTreeProperty<Function> ctxFunctionHash = new ParseTreeProperty<>();
+    private Map<Object, Symbol> ctxSymbolHash = new HashMap<>();
+    private Map<Object, Function> ctxFunctionHash = new HashMap<>();
 
     SymbolTable() {
         Scope gs = new GlobalScope();
         scopeStack.push(gs);
 
-        declareSingleType("void", new Void());
+        declareSingleType("void", new VoidType());
         declarePrimitive("str");
         declarePrimitive("int");
         declarePrimitive("bool");
@@ -253,19 +250,19 @@ class SymbolTable {
         return null;
     }
 
-    Symbol getSymbol(ParserRuleContext ctx) {
+    Symbol getSymbol(Object ctx) {
         return ctxSymbolHash.get(ctx);
     }
 
-    void putSymbol(ParserRuleContext ctx, Symbol symbol) {
+    void putSymbol(Object ctx, Symbol symbol) {
         ctxSymbolHash.put(ctx, symbol);
     }
 
-    Function getFunction(ParserRuleContext ctx) {
+    Function getFunction(ASTNode ctx) {
         return ctxFunctionHash.get(ctx);
     }
 
-    void putFunction(ParserRuleContext ctx, Function f) {
+    void putFunction(ASTNode ctx, Function f) {
         ctxFunctionHash.put(ctx, f);
     }
 

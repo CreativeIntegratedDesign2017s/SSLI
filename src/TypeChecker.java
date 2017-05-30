@@ -153,7 +153,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
 
         ValueExpression retExpr = (ValueExpression)visit(ctx.block());
         if (retExpr == null)
-            retExpr = new ValueExpression(new Void(), false, true);
+            retExpr = new ValueExpression(new VoidType(), false, true);
         if (!retExpr.getBase().equals(retType))
             throw new RuleException(ctx,
                     String.format("Procedure %s's return type is not match with contents (%s<->%s)",
@@ -232,7 +232,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     public Expression visitReturn(SimpleParser.ReturnContext ctx) {
         Expression retExpr;
         if (ctx.isEmpty()) {
-            retExpr = new ValueExpression(new Void(), false, true);
+            retExpr = new ValueExpression(new VoidType(), false, true);
         } else {
             retExpr = visit(ctx.expr());
         }

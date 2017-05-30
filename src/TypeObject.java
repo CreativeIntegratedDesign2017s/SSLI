@@ -133,8 +133,8 @@ class Function extends TypeObject {
     }
 }
 
-class Void extends SingleType {
-    Void() {
+class VoidType extends SingleType {
+    VoidType() {
         super("void");
     }
     public boolean writable() { return false; }

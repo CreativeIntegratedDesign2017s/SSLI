@@ -1,7 +1,10 @@
 import java.util.*;
 import org.antlr.v4.runtime.*;
 
-interface ASTStmt extends ASTNode {
+abstract class ASTStmt extends ASTNode {
+    public ASTStmt(ParserRuleContext ctx) {
+        super(ctx);
+    }
     /* ASTStmt Derivations */
     // ASTEval				Expression, 'expr' could be null
     // ASTDecl				Declaration, 'init' could be null
@@ -13,10 +16,11 @@ interface ASTStmt extends ASTNode {
     // ASTNested			Nested Statement
 }
 
-class ASTEval implements ASTStmt {
+class ASTEval extends ASTStmt {
     ASTExpr expr;
 
-    ASTEval(ASTExpr expr) {
+    ASTEval(ParserRuleContext ctx, ASTExpr expr) {
+        super(ctx);
         this.expr = expr;
     }
 
@@ -24,9 +28,17 @@ class ASTEval implements ASTStmt {
     Type visit(ASTListener<Type> al) {
         return al.visitEval(this);
     }
+    
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(expr);
+    }
 }
 
-class ASTDecl implements ASTStmt {
+class ASTDecl extends ASTStmt {
+    ASTDecl(ParserRuleContext ctx) {
+        super(ctx);
+    }
     static class DeclType {
         Token tid;
         List<Integer> size = new ArrayList<>();
@@ -40,13 +52,19 @@ class ASTDecl implements ASTStmt {
     Type visit(ASTListener<Type> al) {
         return al.visitDecl(this);
     }
+
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(init);
+    }
 }
 
-class ASTAsgn implements ASTStmt {
+class ASTAsgn extends ASTStmt {
     ASTExpr lval;
     ASTExpr rval;
 
-    ASTAsgn(ASTExpr lval, ASTExpr rval) {
+    ASTAsgn(ParserRuleContext ctx, ASTExpr lval, ASTExpr rval) {
+        super(ctx);
         this.lval = lval;
         this.rval = rval;
     }
@@ -55,43 +73,77 @@ class ASTAsgn implements ASTStmt {
     Type visit(ASTListener<Type> al) {
         return al.visitAsgn(this);
     }
+
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(lval);
+        iterFunc.apply(rval);
+    }
 }
 
-class ASTCond implements ASTStmt {
+class ASTCond extends ASTStmt {
+    ASTCond(ParserRuleContext ctx) {
+        super(ctx);
+    }
     ASTExpr cond;
-    List<ASTStmt> thenStmt = new ArrayList<>();
-    List<ASTStmt> elseStmt = new ArrayList<>();
+    ASTStmtList thenStmtList;
+    ASTStmtList elseStmtList;
 
     @Override public <Type>
     Type visit(ASTListener<Type> al) {
         return al.visitCond(this);
     }
+
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(cond);
+        iterFunc.apply(thenStmtList);
+        if (elseStmtList != null)
+            iterFunc.apply(elseStmtList);
+    }
 }
 
-class ASTUntil implements ASTStmt {
+class ASTUntil extends ASTStmt {
+    ASTUntil(ParserRuleContext ctx) {
+        super(ctx);
+    }
     ASTExpr cond;
-    List<ASTStmt> loop = new ArrayList<>();
+    ASTStmtList loop;
 
     @Override public <Type>
     Type visit(ASTListener<Type> al) {
         return al.visitUntil(this);
     }
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(cond);
+        iterFunc.apply(loop);
+    }
 }
 
-class ASTWhile implements ASTStmt {
+class ASTWhile extends ASTStmt {
+    ASTWhile(ParserRuleContext ctx) {
+        super(ctx);
+    }
     ASTExpr cond;
-    List<ASTStmt> loop = new ArrayList<>();
+    ASTStmtList loop;
 
     @Override public <Type>
     Type visit(ASTListener<Type> al) {
         return al.visitWhile(this);
     }
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(cond);
+        iterFunc.apply(loop);
+    }
 }
 
-class ASTReturn implements ASTStmt {
+class ASTReturn extends ASTStmt {
     ASTExpr val;
 
-    ASTReturn(ASTExpr val) {
+    ASTReturn(ParserRuleContext ctx, ASTExpr val) {
+        super(ctx);
         this.val = val;
     }
 
@@ -99,13 +151,24 @@ class ASTReturn implements ASTStmt {
     Type visit(ASTListener<Type> al) {
         return al.visitReturn(this);
     }
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(val);
+    }
 }
 
-class ASTNested implements ASTStmt {
-    List<ASTStmt> stmt = new ArrayList<>();
+class ASTNested extends ASTStmt {
+    ASTNested(ParserRuleContext ctx) {
+        super(ctx);
+    }
+    ASTStmtList stmtList;
 
     @Override public <Type>
     Type visit(ASTListener<Type> al) {
         return al.visitNested(this);
+    }
+    @Override public
+    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+        iterFunc.apply(stmtList);
     }
 }
