@@ -127,6 +127,13 @@ public class SimpleInterpreter {
                 }
             }
 
+            // Build AST
+            ASTBuilder ab = new ASTBuilder();
+            ASTPrgm prgm = (ASTPrgm) ab.visit(tree);
+
+            ASTGraphLog gv = new ASTGraphLog();
+            gv.visitPrgm(prgm);
+
             // Scope Validation
             ScopeChecker scopeChecker = new ScopeChecker(symTable);
             ParseTreeWalker walker = new ParseTreeWalker();
@@ -162,9 +169,9 @@ public class SimpleInterpreter {
                 }
             }
 
-            // Declarations Confirmed
-            symTable.commit();
-            symTable.print();
+        // Declarations Confirmed
+        symTable.commit();
+        symTable.print();
 
             // IR Code Generation
             IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
