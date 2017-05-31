@@ -16,11 +16,18 @@ abstract class ASTExpr extends ASTNode {
 }
 
 class ASTConstant extends ASTExpr {
+    public enum ConstantType {
+        Integer,
+        Bool,
+        String
+    }
     Token token;
+    ConstantType type;
 
-    ASTConstant(ParserRuleContext ctx, Token token) {
+    ASTConstant(ParserRuleContext ctx, Token token, ConstantType ct) {
         super(ctx);
         this.token = token;
+        this.type = ct;
     }
 
     @Override public <Type>

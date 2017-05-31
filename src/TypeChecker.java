@@ -138,7 +138,7 @@ class CallableExpression extends Expression {
     }
 }
 
-class TypeChecker extends SimpleParserBaseVisitor<Expression> {
+class TypeChecker extends ASTListener<Expression> {
     private SymbolTable symTable;
 
     /* Constructor */
@@ -147,21 +147,21 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitProcedure(SimpleParser.ProcedureContext ctx) {
-        SymbolTable.FuncSymbol f = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.ID().getText());
+    public Expression visitProcUnit(ASTProcUnit ctx) {
+        SymbolTable.FuncSymbol f = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.pid.getText());
         ValueType retType = f.overloads.get(f.overloads.size() - 1).rType;
 
-        ValueExpression retExpr = (ValueExpression)visit(ctx.block());
+        ValueExpression retExpr = (ValueExpression)ctx.stmtList.visit(this);
         if (retExpr == null)
             retExpr = new ValueExpression(new VoidType(), false, true);
         if (!retExpr.getBase().equals(retType))
             throw new RuleException(ctx,
                     String.format("Procedure %s's return type is not match with contents (%s<->%s)",
-                            ctx.ID().getText(), retType, retExpr.getBase()));
+                            ctx.pid.getText(), retType, retExpr.getBase()));
         return null;
     }
 
-    private Expression MergeExpression(ParserRuleContext ctx, List<Expression> exprs) {
+    private Expression MergeExpression(ASTNode ctx, List<Expression> exprs) {
         Expression retExpr = null;
         for (Expression expr : exprs) {
             if (retExpr == null)
@@ -174,11 +174,11 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitDeclare(SimpleParser.DeclareContext ctx) {
+    public Expression visitDecl(ASTDecl ctx) {
         SymbolTable.VarSymbol v = (SymbolTable.VarSymbol) symTable.getSymbol(ctx);
 
-        if (ctx.init().expr() != null) {
-            ValueExpression initExpr = (ValueExpression) visit(ctx.init().expr());
+        if (ctx.init != null) {
+            ValueExpression initExpr = (ValueExpression) ctx.init.visit(this);
             if (!v.type.equals(initExpr.getBase())) {
                 throw new RuleException(ctx,
                         String.format("Variable initialize type mismatches (%s <-> %s)", v.type, initExpr));
@@ -189,12 +189,12 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitAssign(SimpleParser.AssignContext ctx) {
-        Expression assignee = visit(ctx.expr(0));
-        Expression assignor = visit(ctx.expr(1));
+    public Expression visitAsgn(ASTAsgn ctx) {
+        Expression assignee = ctx.lval.visit(this);
+        Expression assignor = ctx.rval.visit(this);
 
         if (!assignee.isLValue()) {
-            throw new RuleException(ctx,String.format("%s expression is not lvalue", ctx.expr(0).getText()));
+            throw new RuleException(ctx,String.format("%s expression is not lvalue", ctx.lval.getText()));
         }
 
         if (!assignee.acceptable(assignor)) {
@@ -205,65 +205,64 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitIfElse(SimpleParser.IfElseContext ctx) {
-        Expression conditionExpr = visit(ctx.expr());
+    public Expression visitCond(ASTCond ctx) {
+        Expression conditionExpr = ctx.cond.visit(this);
         if (!conditionExpr.isBoolean()) {
             throw new RuleException(ctx,
-                    String.format("Condition expression must be boolean (%s:%s)", ctx.expr().getText(), conditionExpr));
+                    String.format("Condition expression must be boolean (%s:%s)", ctx.cond.getText(), conditionExpr));
         }
-
-        return MergeExpression(ctx, ctx.stmt_list().stream()
-                .map(this::visit)
+        List<ASTStmtList> stmtList = new ArrayList<ASTStmtList>(){{
+                add(ctx.thenStmtList);
+                if (ctx.elseStmtList != null)
+                    add(ctx.elseStmtList);
+        }};
+        return MergeExpression(ctx, stmtList.stream()
+                .map(sl -> sl.visit(this))
                 .collect(Collectors.toList()));
     }
 
     @Override
-    public Expression visitDoWhile(SimpleParser.DoWhileContext ctx) {
-        Expression conditionExpr = visit(ctx.expr());
+    public Expression visitUntil(ASTUntil ctx) {
+        Expression conditionExpr = ctx.cond.visit(this);
         if (!conditionExpr.isBoolean()) {
             throw new RuleException(ctx,
-                    String.format("Condition expression must be boolean (%s:%s)", ctx.expr().getText(), conditionExpr));
+                    String.format("Condition expression must be boolean (%s:%s)", ctx.cond.getText(), conditionExpr));
         }
 
-        return visit(ctx.stmt_list());
+        return ctx.loop.visit(this);
     }
 
     @Override
-    public Expression visitReturn(SimpleParser.ReturnContext ctx) {
+    public Expression visitReturn(ASTReturn ctx) {
         Expression retExpr;
-        if (ctx.isEmpty()) {
+        if (ctx.val == null) {
             retExpr = new ValueExpression(new VoidType(), false, true);
         } else {
-            retExpr = visit(ctx.expr());
+            retExpr = ctx.val.visit(this);
         }
         return retExpr.getRValue();
     }
 
     @Override
-    public Expression visitWhileDo(SimpleParser.WhileDoContext ctx) {
-        Expression conditionExpr = visit(ctx.expr());
+    public Expression visitWhile(ASTWhile ctx) {
+        Expression conditionExpr = ctx.cond.visit(this);
         if (!conditionExpr.isBoolean()) {
             throw new RuleException(ctx,
-                    String.format("Condition expression must be boolean (%s:%s)", ctx.expr().getText(), conditionExpr));
+                    String.format("Condition expression must be boolean (%s:%s)", ctx.cond.getText(), conditionExpr));
         }
 
-        return visit(ctx.stmt_list());
+        return ctx.loop.visit(this);
     }
 
     @Override
-    public Expression visitStmt_list(SimpleParser.Stmt_listContext ctx) {
-        return MergeExpression(ctx, ctx.stmt().stream()
-                .map(this::visit)
+    public Expression visitStmtList(ASTStmtList ctx) {
+        return MergeExpression(ctx, ctx.list.stream()
+                .map(n -> n.visit(this))
                 .collect(Collectors.toList()));
     }
 
     @Override
-    public Expression visitBlock(SimpleParser.BlockContext ctx) {
-        return visit(ctx.stmt_list());
-    }
-
-    @Override
-    public Expression visitIdentifier(SimpleParser.IdentifierContext ctx) {
+    public Expression visitVariable(ASTVariable ctx) {
         SymbolTable.Symbol symbol = symTable.getSymbol(ctx);
 
         if (symbol instanceof SymbolTable.VarSymbol) {
@@ -278,32 +277,30 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         throw new RuleException(ctx,"Undefined symbol" + ctx.getText());
     }
 
-    private Expression visitPrimitive(String primitiveName) {
+    @Override
+    public Expression visitConstant(ASTConstant ctx){
+        String primitiveName;
+        switch(ctx.type) {
+            case Bool:
+                primitiveName = "bool";
+                break;
+            case Integer:
+                primitiveName = "int";
+                break;
+            default:
+            case String:
+                primitiveName = "str";
+        }
         SingleType uExpr = symTable.getSingleType(primitiveName);
         return new ValueExpression(uExpr, false, true);
     }
 
     @Override
-    public Expression visitBoolean(SimpleParser.BooleanContext ctx){
-        return visitPrimitive("bool");
-    }
+    public Expression visitProcCall(ASTProcCall ctx) {
+        SymbolTable.FuncSymbol fSymbol = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.pid.getText());
 
-    @Override
-    public Expression visitInteger(SimpleParser.IntegerContext ctx) {
-        return visitPrimitive("int");
-    }
-
-    @Override
-    public Expression visitString(SimpleParser.StringContext ctx) {
-        return visitPrimitive("str");
-    }
-
-    @Override
-    public Expression visitProcCall(SimpleParser.ProcCallContext ctx) {
-        SymbolTable.FuncSymbol fSymbol = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.ID().getText());
-
-        List<Expression> arguments = ctx.argu_list().expr().stream()
-                .map(this::visit)
+        List<Expression> arguments = ctx.param.stream()
+                .map(n -> n.visit(this))
                 .collect(Collectors.toList());
 
         CallableExpression funcExpression = new CallableExpression(fSymbol);
@@ -311,44 +308,44 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         if (f == null) {
             throw new RuleException(ctx,
                     String.format("No parameter set is matched with %s, (Callable: %s, Arguments: %s)",
-                            ctx.ID().getText(), funcExpression, arguments));
+                            ctx.pid.getText(), funcExpression, arguments));
         }
         symTable.putFunction(ctx, f);
         return new ValueExpression(f.rType, false, false);
     }
 
     @Override
-    public Expression visitSubscript(SimpleParser.SubscriptContext ctx) {
-        Expression containerExpr = visit(ctx.Container);
-        Expression indexerExpr = visit(ctx.Indexer);
+    public Expression visitSubscript(ASTSubscript ctx) {
+        Expression containerExpr = ctx.arr.visit(this);
+        Expression indexerExpr = ctx.index.visit(this);
         if (!indexerExpr.isNumeric()) {
-            throw new RuleException(ctx,String.format("Non integer subscript is not support (%s)", ctx.Indexer.getText()));
+            throw new RuleException(ctx,String.format("Non integer subscript is not support (%s)", ctx.index.getText()));
         }
         Expression rankDownExpr = containerExpr.rankDown();
         if (rankDownExpr == null) {
-            throw new RuleException(ctx,String.format("Can't subscript for this expression (%s)", ctx.Container.getText()));
+            throw new RuleException(ctx,String.format("Can't subscript for this expression (%s)", ctx.arr.getText()));
         }
         return rankDownExpr;
     }
 
     @Override
-    public Expression visitSubstring(SimpleParser.SubstringContext ctx) {
-        Expression containerExpr = visit(ctx.Container);
-        Expression fromExpr = visit(ctx.From);
-        Expression toExpr = visit(ctx.To);
+    public Expression visitSubstring(ASTSubstring ctx) {
+        Expression containerExpr = ctx.str.visit(this);
+        Expression fromExpr = ctx.index1.visit(this);
+        Expression toExpr = ctx.index2.visit(this);
 
         if (!containerExpr.isLiteral()) {
-            throw new RuleException(ctx,String.format("Only string expression can be divided (%s)", ctx.Container.getText()));
+            throw new RuleException(ctx,String.format("Only string expression can be divided (%s)", ctx.str.getText()));
         }
 
         if (!fromExpr.isNumeric() || toExpr.isNumeric()) {
-            throw new RuleException(ctx,String.format("Indexing expression must be numeric (%s, %s)", ctx.From.getText(), ctx.To.getText()));
+            throw new RuleException(ctx,String.format("Indexing expression must be numeric (%s, %s)", ctx.index1.getText(), ctx.index2.getText()));
         }
 
         return containerExpr.getRValue();
     }
 
-    private String OperatorTranslator(ParserRuleContext ctx, int opToken) {
+    private String OperatorTranslator(ASTNode ctx, int opToken) {
         switch(opToken) {
             case SimpleParser.ADD:
                 return "plus";
@@ -359,7 +356,7 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
             case SimpleParser.MUL:
                 return "mult";
             case SimpleParser.POW:
-                return "pow";
+                return "binary_pow";
             case SimpleParser.LT:
                 return "lessthan";
             case SimpleParser.GT:
@@ -385,10 +382,10 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
         }
     }
 
-    private Expression operatorRedirection(ParserRuleContext pCtx, String operatorName, SimpleParser.ExprContext... operandCtxs) {
+    private Expression operatorRedirection(ASTNode pCtx, String operatorName, ASTExpr... operandCtxs) {
         List<ValueExpression> opArgs = new ArrayList<>();
-        for (SimpleParser.ExprContext ctx : operandCtxs) {
-            Expression expr = visit(ctx);
+        for (ASTExpr ctx : operandCtxs) {
+            Expression expr = ctx.visit(this);
 
             if (!(expr instanceof ValueExpression)) {
                 throw new RuleException(ctx,"Function cannot associated with operator (" + ctx.getText() + ")");
@@ -422,51 +419,13 @@ class TypeChecker extends SimpleParserBaseVisitor<Expression> {
     }
 
     @Override
-    public Expression visitUnaryPM(SimpleParser.UnaryPMContext ctx) {
+    public Expression visitUnary(ASTUnary ctx) {
         String operatorName = "unary_" + OperatorTranslator(ctx, ctx.op.getType());
-        return operatorRedirection(ctx, operatorName, ctx.expr());
+        return operatorRedirection(ctx, operatorName, ctx.oprnd);
     }
 
     @Override
-    public Expression visitPow(SimpleParser.PowContext ctx) {
-        return operatorRedirection(ctx, "binary_pow", ctx.Base, ctx.Exponent);
-    }
-
-    @Override
-    public Expression visitMulDiv(SimpleParser.MulDivContext ctx) {
-        String opName = "binary_" + OperatorTranslator(ctx, ctx.op.getType());
-        return operatorRedirection(ctx, opName, ctx.Oprnd1, ctx.Oprnd2);
-    }
-
-    @Override
-    public Expression visitAddSub(SimpleParser.AddSubContext ctx) {
-        String opName = "binary_" + OperatorTranslator(ctx, ctx.op.getType());
-        return operatorRedirection(ctx, opName, ctx.Oprnd1, ctx.Oprnd2);
-    }
-
-    @Override
-    public Expression visitCompare(SimpleParser.CompareContext ctx) {
-        String opName = "cmp_" + OperatorTranslator(ctx, ctx.op.getType());
-        return operatorRedirection(ctx, opName, ctx.Oprnd1, ctx.Oprnd2);
-    }
-
-    @Override
-    public Expression visitNot(SimpleParser.NotContext ctx) {
-        return operatorRedirection(ctx, "logical_not", ctx.expr());
-    }
-
-    @Override
-    public Expression visitAnd(SimpleParser.AndContext ctx) {
-        return operatorRedirection(ctx, "logical_and", ctx.Oprnd1, ctx.Oprnd2);
-    }
-
-    @Override
-    public Expression visitOr(SimpleParser.OrContext ctx) {
-        return operatorRedirection(ctx, "logical_or", ctx.Oprnd1, ctx.Oprnd2);
-    }
-
-    @Override
-    public Expression visitBracket(SimpleParser.BracketContext ctx) {
-        return visit(ctx.expr()).getRValue();
+    public Expression visitBinary(ASTBinary ctx) {
+        return operatorRedirection(ctx, "binary_" + OperatorTranslator(ctx, ctx.op.getType()), ctx.oprnd1, ctx.oprnd2);
     }
 }

@@ -136,9 +136,8 @@ public class SimpleInterpreter {
 
             // Scope Validation
             ScopeChecker scopeChecker = new ScopeChecker(symTable);
-            ParseTreeWalker walker = new ParseTreeWalker();
             try {
-                walker.walk(scopeChecker, tree);
+                prgm.visit(scopeChecker);
             } catch (RuleException e) {
                 symTable.clear();
                 if (config.inOpt) {
@@ -155,7 +154,7 @@ public class SimpleInterpreter {
             // Check Type Consistency
             TypeChecker typeChecker = new TypeChecker(symTable);
             try {
-                typeChecker.visit(tree);
+                prgm.visit(typeChecker);
             } catch (RuleException e) {
                 symTable.clear();
                 if (config.inOpt) {

@@ -101,13 +101,13 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
         return visit(ctx.expr());
     }
     public ASTNode visitBoolean(SimpleParser.BooleanContext ctx) {
-        return new ASTConstant(ctx, ctx.BOOL().getSymbol());
+        return new ASTConstant(ctx, ctx.BOOL().getSymbol(), ASTConstant.ConstantType.Bool);
     }
     public ASTNode visitInteger(SimpleParser.IntegerContext ctx) {
-        return new ASTConstant(ctx, ctx.INT().getSymbol());
+        return new ASTConstant(ctx, ctx.INT().getSymbol(), ASTConstant.ConstantType.Integer);
     }
     public ASTNode visitString(SimpleParser.StringContext ctx) {
-        return new ASTConstant(ctx, ctx.STR().getSymbol());
+        return new ASTConstant(ctx, ctx.STR().getSymbol(), ASTConstant.ConstantType.String);
     }
     public ASTNode visitIdentifier(SimpleParser.IdentifierContext ctx) {
         return new ASTVariable(ctx, ctx.ID().getSymbol());

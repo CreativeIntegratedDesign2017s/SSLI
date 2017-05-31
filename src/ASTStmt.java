@@ -55,7 +55,8 @@ class ASTDecl extends ASTStmt {
 
     @Override public
     void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(init);
+        if (init != null)
+            iterFunc.apply(init);
     }
 }
 
@@ -153,7 +154,8 @@ class ASTReturn extends ASTStmt {
     }
     @Override public
     void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(val);
+        if (val != null)
+            iterFunc.apply(val);
     }
 }
 
