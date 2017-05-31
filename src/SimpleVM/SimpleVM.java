@@ -114,6 +114,7 @@ public class SimpleVM  {
     }
 
     SimpleVM(String fileName) throws IOException {
+        super();
         File IRCodeFile = new File(fileName);
         FileReader fileReader = new FileReader(IRCodeFile);
         BufferedReader bufferedReader = new BufferedReader(fileReader);
@@ -137,6 +138,8 @@ public class SimpleVM  {
         fileReader.close();
         // End of ProcMap construction
 
+        instReg = new InstRegister(procMap.get(null));
+        run();
     }
 
     void loadIR(String pid, List<String> ir) {
