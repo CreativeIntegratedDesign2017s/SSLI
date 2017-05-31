@@ -1,4 +1,5 @@
 package SimpleVM;
+import java.io.*;
 import java.util.*;
 
 class DataRegister {
@@ -112,7 +113,31 @@ public class SimpleVM  {
         procMap = new HashMap<>();
     }
 
-    SimpleVM(String filename) { /* Future Work */ }
+    SimpleVM(String fileName) throws IOException {
+        File IRCodeFile = new File(fileName);
+        FileReader fileReader = new FileReader(IRCodeFile);
+        BufferedReader bufferedReader = new BufferedReader(fileReader);
+        String line;
+        List<String> insts = new ArrayList<>();
+        String procName = null;         // null for main method
+
+        // Constructs a ProcMap
+        while ((line = bufferedReader.readLine()) != null) {
+            String inst = line;
+            if(inst.split(" ")[0] == "PROC") {
+                loadIR(procName, insts);
+                insts = new ArrayList<>();
+                procName = inst.split(" ")[1].split("@")[0];
+            }
+            else {
+                insts.add(inst);
+            }
+        }
+        loadIR(procName, insts);
+        fileReader.close();
+        // End of ProcMap construction
+
+    }
 
     void loadIR(String pid, List<String> ir) {
         Instruction[] inst = ir.stream()
