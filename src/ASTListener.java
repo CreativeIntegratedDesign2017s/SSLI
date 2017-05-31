@@ -27,11 +27,14 @@ public class ASTListener<T> {
     T aggregateResult(T aggregate, T nextResult) {
         return nextResult;
     }
+    public T visit(ASTNode n) {
+        return n.visit(this);
+    }
     T visitChildren(ASTNode n) {
         ArrayList<T> aggregate = new ArrayList<T>(){{
            add(null);
         }};
-        n.foreachChild(cn -> (Void)aggregate.set(0, aggregateResult(aggregate.get(0), cn.visit(this))));
+        n.foreachChild(cn -> (Void)aggregate.set(0, aggregateResult(aggregate.get(0), visit(cn))));
         return aggregate.get(0);
     }
 }

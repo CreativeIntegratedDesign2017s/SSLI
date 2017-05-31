@@ -79,7 +79,7 @@ class IRChunk {
     List<IRStatement> statements;
 }
 
-public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
+public class IRBuilder extends ASTListener<IRChunk> {
     StackIndex top;
     Map<SymbolTable.Symbol, StackIndex> symbolIndex = new HashMap<>();
     SymbolTable symTable;
@@ -115,9 +115,9 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
     }
 
     @Override
-    public IRChunk visitProcedure(SimpleParser.ProcedureContext ctx) {
+    public IRChunk visitProcUnit(ASTProcUnit ctx) {
         Function fDecl = symTable.getFunction(ctx);
-        String funcName = ctx.ID().getText() + fDecl.getDecorator();
+        String funcName = ctx.pid.getText() + fDecl.getDecorator();
         IRChunk functionBegin = new IRChunk() {{
             statements = new ArrayList<IRStatement>() {{
                 add(new IRStatement("PROC", new RawArg(funcName)));
@@ -127,15 +127,13 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
         StackIndex prevTop = top;
         top = new StackIndex(0, false);
 
-        SimpleParser.Para_listContext paraCtx = ctx.para_list();
-        for (int i = 0; i < (paraCtx.getChildCount() + 1) / 3; i++)
+        for (ASTProcUnit.ParaType ptype : ctx.type)
         {
-            SimpleParser.PtypeContext typeCtx = paraCtx.ptype(i);
-            SymbolTable.Symbol paramSymbol = symTable.getSymbol(typeCtx);
+            SymbolTable.Symbol paramSymbol = symTable.getSymbol(ptype);
             symbolIndex.put(paramSymbol, incIndex(1));
         }
 
-        IRChunk blockChunk = visit(ctx.block());
+        IRChunk blockChunk = ctx.stmtList.visit(this);
         int maxLine = blockChunk.statements.size();
         for (int i = 0; i < maxLine; ++i) {
             IRStatement stmt = blockChunk.statements.get(i);
@@ -148,20 +146,20 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
             }
         }
 
-        top = new StackIndex(1, false);
+        top = prevTop;
 
         return aggregateResult(functionBegin, blockChunk, new IRChunk(new IRStatement("RET", top)));
     }
 
     @Override
-    public IRChunk visitDeclare(SimpleParser.DeclareContext ctx) {
+    public IRChunk visitDecl(ASTDecl ctx) {
         SymbolTable.Symbol v = symTable.getSymbol(ctx);
         symbolIndex.put(v, incIndex(1));
-        if (ctx.init().expr() == null) {
+        if (ctx.init == null) {
             return null;
         }
 
-        IRChunk initializeChunk = visit(ctx.init().expr());
+        IRChunk initializeChunk = ctx.init.visit(this);
         incIndex(-1);
         IRChunk movChunk = new IRChunk(new IRStatement("MOVE", top, top.offset(1)));
 
@@ -169,7 +167,7 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
     }
 
     @Override
-    public IRChunk visitIdentifier(SimpleParser.IdentifierContext ctx) {
+    public IRChunk visitVariable(ASTVariable ctx) {
         SymbolTable.Symbol s = symTable.getSymbol(ctx);
         if (s instanceof SymbolTable.VarSymbol)
             return new IRChunk(new IRStatement("LEA", incIndex(1), symbolIndex.get(s)));
@@ -178,50 +176,42 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
     }
 
     @Override
-    public IRChunk visitBoolean(SimpleParser.BooleanContext ctx) {
-        return new IRChunk(new IRStatement("LOAD", incIndex(1), new Constant(ctx.getText())));
+    public IRChunk visitConstant(ASTConstant ctx) {
+        return new IRChunk(new IRStatement("LOAD", incIndex(1), new Constant(ctx.token.getText())));
     }
 
     @Override
-    public IRChunk visitInteger(SimpleParser.IntegerContext ctx) {
-        return new IRChunk(new IRStatement("LOAD", incIndex(1), new Constant(ctx.getText())));
-    }
-
-    @Override
-    public IRChunk visitString(SimpleParser.StringContext ctx) {
-        return new IRChunk(new IRStatement("LOAD", incIndex(1), new Constant(ctx.getText())));
-    }
-
-    @Override public IRChunk visitAssign(SimpleParser.AssignContext ctx) {
+    public IRChunk visitAsgn(ASTAsgn ctx) {
         StackIndex prevTop = top;
-        IRChunk dest = visit(ctx.expr(0));
-        IRChunk source = visit(ctx.expr(1));
+        IRChunk dest = ctx.lval.visit(this);
+        IRChunk source = ctx.rval.visit(this);
 
         top = prevTop;
         IRChunk move = new IRChunk(new IRStatement("MOVE", top.offset(1), top.offset(2)));
         return aggregateResult(dest, source, move);
     }
     
-    @Override public IRChunk visitIfElse(SimpleParser.IfElseContext ctx) {
+    @Override
+    public IRChunk visitCond(ASTCond ctx) {
         StackIndex prevTop = top;
-        IRChunk elsePart = ctx.stmt_list(1) != null ? visit(ctx.stmt_list(1)) : null;
+        IRChunk elsePart = ctx.elseStmtList != null ? ctx.elseStmtList.visit(this) : null;
         top = prevTop;
-        IRChunk ifPart = visit(ctx.stmt_list(0));
+        IRChunk ifPart = ctx.thenStmtList.visit(this);
         top = prevTop;
 
         elsePart = aggregateResult(elsePart, new IRChunk(new IRStatement("JMP", new Constant(ifPart.size()))));
 
-        IRChunk exprChunk = visit(ctx.expr());
+        IRChunk exprChunk = ctx.cond.visit(this);
         IRChunk testChunk = new IRChunk(new IRStatement("TEST", top, new Constant(elsePart.size())));
         top = prevTop;
         return aggregateResult(exprChunk, testChunk, elsePart, ifPart);
     }
     
-    @Override public IRChunk visitDoWhile(SimpleParser.DoWhileContext ctx) {
+    @Override public IRChunk visitUntil(ASTUntil ctx) {
         StackIndex prevTop = top;
-        IRChunk stmtChunk = visit(ctx.stmt_list());
+        IRChunk stmtChunk = visit(ctx.loop);
         top = prevTop;
-        IRChunk exprChunk = visit(ctx.expr());
+        IRChunk exprChunk = visit(ctx.cond);
 
         IRChunk testChunk = new IRChunk(
                 new IRStatement("TEST", top, new Constant(-(stmtChunk.size() + exprChunk.size() + 1))));
@@ -229,11 +219,11 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
         return aggregateResult(stmtChunk, exprChunk, testChunk);
     }
     
-    @Override public IRChunk visitWhileDo(SimpleParser.WhileDoContext ctx) {
+    @Override public IRChunk visitWhile(ASTWhile ctx) {
         StackIndex prevTop = top;
-        IRChunk stmtChunk = visit(ctx.stmt_list());
+        IRChunk stmtChunk = visit(ctx.loop);
         top = prevTop;
-        IRChunk exprChunk = visit(ctx.expr());
+        IRChunk exprChunk = visit(ctx.cond);
 
         IRChunk testChunk = new IRChunk(
                 new IRStatement("TEST", top, new Constant(-(stmtChunk.size() + exprChunk.size() + 1))));
@@ -242,39 +232,40 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
                 stmtChunk, exprChunk, testChunk);
     }
     
-    @Override public IRChunk visitReturn(SimpleParser.ReturnContext ctx) {
-        IRChunk retExprChunk = ctx.expr() != null ? visit(ctx.expr()) : null;
+    @Override public IRChunk visitReturn(ASTReturn ctx) {
+        IRChunk retExprChunk = ctx.val != null ? visit(ctx.val) : null;
         IRChunk moveRetValueChunk = new IRChunk(
                 new IRStatement("MOVE", new StackIndex(1, false), top));
         return aggregateResult(retExprChunk, moveRetValueChunk, new IRChunk(new IRStatement("TEMP_RET")));
     }
     
-    @Override public IRChunk visitSubstring(SimpleParser.SubstringContext ctx) {
+    @Override public IRChunk visitSubstring(ASTSubstring ctx) {
         // Substring은 언어단에서 지원하는 기능이지만 IRCode에서 바로 지원하지 않고 시스템 콜 함수를 이용할 계획
         // d = substring(a, b, c)와 같이 생각하자
         IRChunk funcChunk = new IRChunk(
                 new IRStatement("LOAD", incIndex(1), new Constant("\"substring@str\"")));
         StackIndex prevTop = top;
-        IRChunk containerChunk = visit(ctx.Container);
-        IRChunk fromChunk = visit(ctx.From);
-        IRChunk toChunk = visit(ctx.To);
+        IRChunk containerChunk = visit(ctx.str);
+        IRChunk fromChunk = visit(ctx.index1);
+        IRChunk toChunk = visit(ctx.index2);
         IRChunk callChunk = new IRChunk(new IRStatement("CALL", prevTop, new Constant(3)));
         top = prevTop;
         return aggregateResult(funcChunk, containerChunk, fromChunk, toChunk, callChunk);
     }
 
-    IRChunk binaryExpression(String command, SimpleParser.ExprContext operand1, SimpleParser.ExprContext operand2) {
-        IRChunk oprnd1Chunk = visit(operand1);
-        IRChunk oprnd2Chunk = visit(operand2);
-        top = top.offset(-1);
-        IRChunk opChunk = new IRChunk(new IRStatement(command, top, top, top.offset(1)));
-        return aggregateResult(oprnd1Chunk, oprnd2Chunk, opChunk);
-    }
-
-    IRChunk unaryExpression(String command, SimpleParser.ExprContext oprand) {
-        IRChunk oprandChunk = visit(oprand);
-        IRChunk opChunk = new IRChunk(new IRStatement(command, top, top));
-        return aggregateResult(oprandChunk, opChunk);
+    @Override
+    public IRChunk visitUnary(ASTUnary ctx) {
+        IRChunk oprandChunk = visit(ctx.oprnd);
+        if (ctx.op.getType() == SimpleParser.ADD)
+            return oprandChunk;
+        else if (ctx.op.getType() == SimpleParser.SUB) {
+            IRChunk opChunk = new IRChunk(new IRStatement("UMN", top, top));
+            return aggregateResult(oprandChunk, opChunk);
+        } else if (ctx.op.getType() == SimpleParser.NOT) {
+            IRChunk opChunk = new IRChunk(new IRStatement("NOT", top, top));
+            return aggregateResult(oprandChunk, opChunk);
+        } else
+            return null;
     }
 
     private String OperatorTranslator(int opToken) {
@@ -313,61 +304,27 @@ public class IRBuilder extends SimpleParserBaseVisitor<IRChunk> {
                 return "NOP";
         }
     }
-    
-    @Override public IRChunk visitOr(SimpleParser.OrContext ctx) {
-        return binaryExpression(OperatorTranslator(ctx.OR().getSymbol().getType()), ctx.Oprnd1, ctx.Oprnd2);
-    }
-    
-    @Override public IRChunk visitMulDiv(SimpleParser.MulDivContext ctx) {
-        return binaryExpression(OperatorTranslator(ctx.op.getType()), ctx.Oprnd1, ctx.Oprnd2);
-    }
-    
-    @Override public IRChunk visitAddSub(SimpleParser.AddSubContext ctx) {
-        return binaryExpression(OperatorTranslator(ctx.op.getType()), ctx.Oprnd1, ctx.Oprnd2);
-    }
-    
-    @Override public IRChunk visitSubscript(SimpleParser.SubscriptContext ctx) {
-        return binaryExpression("GETTABLE", ctx.Container, ctx.Indexer);
-    }
-    
-    @Override public IRChunk visitNot(SimpleParser.NotContext ctx) {
-        return unaryExpression(OperatorTranslator(ctx.NOT().getSymbol().getType()), ctx.expr());
+
+    @Override
+    public IRChunk visitBinary(ASTBinary ctx) {
+        IRChunk oprnd1Chunk = visit(ctx.oprnd1);
+        IRChunk oprnd2Chunk = visit(ctx.oprnd2);
+        top = top.offset(-1);
+        IRChunk opChunk = new IRChunk(new IRStatement(OperatorTranslator(ctx.op.getType()), top, top, top.offset(1)));
+        return aggregateResult(oprnd1Chunk, oprnd2Chunk, opChunk);
     }
 
-    @Override public IRChunk visitProcCall(SimpleParser.ProcCallContext ctx) {
+    @Override public IRChunk visitProcCall(ASTProcCall ctx) {
         Function f = symTable.getFunction(ctx);
         IRChunk funcChunk = new IRChunk(
                 new IRStatement("LOAD", incIndex(1),
-                        new Constant("\"" + ctx.ID() + f.getDecorator() + "\"")));
+                        new Constant("\"" + ctx.pid.getText() + f.getDecorator() + "\"")));
         StackIndex nextTop = top;
-        IRChunk parameterChunk = visit(ctx.argu_list());
+        List<IRChunk> exprs = ctx.param.stream().map(this::visit).collect(Collectors.toList());
+        IRChunk parameterChunk = aggregateResult(exprs.toArray(new IRChunk[exprs.size()]));
         IRChunk callChunk = new IRChunk(
                 new IRStatement("CALL", nextTop, new Constant(top.index - nextTop.index)));
         top = nextTop;
         return aggregateResult(funcChunk, parameterChunk, callChunk);
-    }
-    
-    @Override public IRChunk visitAnd(SimpleParser.AndContext ctx) {
-        return binaryExpression(OperatorTranslator(ctx.AND().getSymbol().getType()), ctx.Oprnd1, ctx.Oprnd2);
-    }
-    
-    @Override public IRChunk visitPow(SimpleParser.PowContext ctx) {
-        return binaryExpression(OperatorTranslator(ctx.POW().getSymbol().getType()), ctx.Base, ctx.Exponent);
-    }
-    
-    @Override public IRChunk visitCompare(SimpleParser.CompareContext ctx) {
-        return binaryExpression(OperatorTranslator(ctx.op.getType()), ctx.Oprnd1, ctx.Oprnd2);
-    }
-    
-    @Override public IRChunk visitUnaryPM(SimpleParser.UnaryPMContext ctx) {
-        if (ctx.op.getType() == SimpleParser.ADD)   // 바이너리 에드를 생각못했넹..
-            return visit(ctx.expr());
-
-        return unaryExpression("UMN", ctx.expr());
-    }
-
-    @Override public IRChunk visitArgu_list(SimpleParser.Argu_listContext ctx) {
-        List<IRChunk> exprs = ctx.expr().stream().map(this::visit).collect(Collectors.toList());
-        return aggregateResult(exprs.toArray(new IRChunk[exprs.size()]));
     }
 }

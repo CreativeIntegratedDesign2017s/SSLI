@@ -188,17 +188,17 @@ class SymbolTable {
                 add(new OperatorInfo("binary_div", "int", "int", "int"));
                 add(new OperatorInfo("binary_mult", "int", "int", "int"));
                 add(new OperatorInfo("binary_pow", "int", "int", "int"));
-                add(new OperatorInfo("cmp_lessthan", "bool", "int", "int"));
-                add(new OperatorInfo("cmp_greaterthan", "bool", "int", "int"));
-                add(new OperatorInfo("cmp_equal", "bool", "int", "int"));
-                add(new OperatorInfo("cmp_notequal", "bool", "int", "int"));
-                add(new OperatorInfo("cmp_lessequal", "bool", "int", "int"));
-                add(new OperatorInfo("cmp_greaterequal", "bool", "int", "int"));
+                add(new OperatorInfo("binary_lessthan", "bool", "int", "int"));
+                add(new OperatorInfo("binary_greaterthan", "bool", "int", "int"));
+                add(new OperatorInfo("binary_equal", "bool", "int", "int"));
+                add(new OperatorInfo("binary_notequal", "bool", "int", "int"));
+                add(new OperatorInfo("binary_lessequal", "bool", "int", "int"));
+                add(new OperatorInfo("binary_greaterequal", "bool", "int", "int"));
 
                 // bool operators
-                add(new OperatorInfo("logical_and", "bool", "bool", "bool"));
-                add(new OperatorInfo("logical_or", "bool", "bool", "bool"));
-                add(new OperatorInfo("logical_not", "bool", "bool", "bool"));
+                add(new OperatorInfo("binary_and", "bool", "bool", "bool"));
+                add(new OperatorInfo("binary_or", "bool", "bool", "bool"));
+                add(new OperatorInfo("unary_not", "bool", "bool"));
             }
         };
         for (OperatorInfo opInfo : primitiveOperators) {

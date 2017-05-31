@@ -174,7 +174,7 @@ public class SimpleInterpreter {
 
             // IR Code Generation
             IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
-            IRChunk chunk = irBuilder.visit(tree);
+            IRChunk chunk = irBuilder.visit(prgm);
             System.out.println("----IR CODE GENERATION----");
             for (IRStatement stmt : chunk.statements) {
                 System.out.println(stmt.toString());
