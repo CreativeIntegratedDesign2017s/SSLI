@@ -15,11 +15,11 @@ abstract class ASTNode {
     int getLine() { return line; }
 
     abstract <Type> Type visit(ASTListener<Type> al);
-    abstract void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc);
+    abstract void foreachChild(java.util.function.Consumer<ASTNode> iterFunc);
 }
 
 class ASTPrgm extends ASTNode {
-    public ASTPrgm(ParserRuleContext ctx) {
+    ASTPrgm(ParserRuleContext ctx) {
         super(ctx);
     }
 
@@ -32,8 +32,8 @@ class ASTPrgm extends ASTNode {
     }
 
     @Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
         for (ASTNode n : units)
-            iterFunc.apply(n);
+            iterFunc.accept(n);
     }
 }

@@ -148,7 +148,15 @@ public class IRBuilder extends ASTListener<IRChunk> {
 
         top = prevTop;
 
-        return aggregateResult(functionBegin, blockChunk, new IRChunk(new IRStatement("RET", top)));
+        return aggregateResult(functionBegin, blockChunk, new IRChunk(new IRStatement("RET", new StackIndex(1, false))));
+    }
+
+    @Override
+    public IRChunk visitStmtList(ASTStmtList ctx) {
+        IRChunk base = new IRChunk(){{
+                statements = new ArrayList<>();
+        }};
+        return aggregateResult(base, visitChildren(ctx));
     }
 
     @Override
@@ -190,7 +198,7 @@ public class IRBuilder extends ASTListener<IRChunk> {
         IRChunk move = new IRChunk(new IRStatement("MOVE", top.offset(1), top.offset(2)));
         return aggregateResult(dest, source, move);
     }
-    
+
     @Override
     public IRChunk visitCond(ASTCond ctx) {
         StackIndex prevTop = top;
@@ -206,7 +214,7 @@ public class IRBuilder extends ASTListener<IRChunk> {
         top = prevTop;
         return aggregateResult(exprChunk, testChunk, elsePart, ifPart);
     }
-    
+
     @Override public IRChunk visitUntil(ASTUntil ctx) {
         StackIndex prevTop = top;
         IRChunk stmtChunk = visit(ctx.loop);
@@ -218,7 +226,7 @@ public class IRBuilder extends ASTListener<IRChunk> {
         top = prevTop;
         return aggregateResult(stmtChunk, exprChunk, testChunk);
     }
-    
+
     @Override public IRChunk visitWhile(ASTWhile ctx) {
         StackIndex prevTop = top;
         IRChunk stmtChunk = visit(ctx.loop);
@@ -231,14 +239,14 @@ public class IRBuilder extends ASTListener<IRChunk> {
         return aggregateResult(new IRChunk(new IRStatement("JMP", new Constant(stmtChunk.size()))),
                 stmtChunk, exprChunk, testChunk);
     }
-    
+
     @Override public IRChunk visitReturn(ASTReturn ctx) {
         IRChunk retExprChunk = ctx.val != null ? visit(ctx.val) : null;
         IRChunk moveRetValueChunk = new IRChunk(
                 new IRStatement("MOVE", new StackIndex(1, false), top));
         return aggregateResult(retExprChunk, moveRetValueChunk, new IRChunk(new IRStatement("TEMP_RET")));
     }
-    
+
     @Override public IRChunk visitSubstring(ASTSubstring ctx) {
         // Substring은 언어단에서 지원하는 기능이지만 IRCode에서 바로 지원하지 않고 시스템 콜 함수를 이용할 계획
         // d = substring(a, b, c)와 같이 생각하자

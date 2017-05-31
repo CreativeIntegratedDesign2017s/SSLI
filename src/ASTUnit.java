@@ -23,8 +23,8 @@ class ASTStmtUnit extends ASTUnit {
         return al.visitStmtUnit(this);
     }
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(stmt);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(stmt);
     }
 }
 
@@ -49,7 +49,7 @@ class ASTProcUnit extends ASTUnit {
         return al.visitProcUnit(this);
     }
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(stmtList);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(stmtList);
     }
 }

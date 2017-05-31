@@ -35,7 +35,7 @@ class ASTConstant extends ASTExpr {
         return al.visitConstant(this);
     }
     @Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
     }
 }
 
@@ -52,7 +52,7 @@ class ASTVariable extends ASTExpr {
         return al.visitVariable(this);
     }
     @Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
     }
 }
 
@@ -71,8 +71,8 @@ class ASTUnary extends ASTExpr {
         return al.visitUnary(this);
     }
     @Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(oprnd);
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(oprnd);
     }
 }
 
@@ -93,9 +93,9 @@ class ASTBinary extends ASTExpr {
         return al.visitBinary(this);
     }
     @Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(oprnd1);
-        iterFunc.apply(oprnd2);
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(oprnd1);
+        iterFunc.accept(oprnd2);
     }
 }
 
@@ -113,9 +113,9 @@ class ASTSubscript extends ASTExpr {
     Type visit(ASTListener<Type> al) {
         return al.visitSubscript(this);
     }@Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(arr);
-        iterFunc.apply(index);
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(arr);
+        iterFunc.accept(index);
     }
 
 }
@@ -137,10 +137,10 @@ class ASTSubstring extends ASTExpr {
         return al.visitSubstring(this);
     }
     @Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(str);
-        iterFunc.apply(index1);
-        iterFunc.apply(index2);
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(str);
+        iterFunc.accept(index1);
+        iterFunc.accept(index2);
     }
 }
 
@@ -159,8 +159,8 @@ class ASTProcCall extends ASTExpr {
         return al.visitProcCall(this);
     }
     @Override
-    public void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    public void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
         for (ASTNode n : param)
-            iterFunc.apply(n);
+            iterFunc.accept(n);
     }
 }

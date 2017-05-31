@@ -17,9 +17,9 @@ public class ASTStmtList extends ASTNode {
     }
 
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
         for(ASTNode n : list) {
-            iterFunc.apply(n);
+            iterFunc.accept(n);
         }
     }
 }

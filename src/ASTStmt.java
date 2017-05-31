@@ -30,8 +30,8 @@ class ASTEval extends ASTStmt {
     }
     
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(expr);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(expr);
     }
 }
 
@@ -54,9 +54,9 @@ class ASTDecl extends ASTStmt {
     }
 
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
         if (init != null)
-            iterFunc.apply(init);
+            iterFunc.accept(init);
     }
 }
 
@@ -76,9 +76,9 @@ class ASTAsgn extends ASTStmt {
     }
 
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(lval);
-        iterFunc.apply(rval);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(lval);
+        iterFunc.accept(rval);
     }
 }
 
@@ -96,11 +96,11 @@ class ASTCond extends ASTStmt {
     }
 
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(cond);
-        iterFunc.apply(thenStmtList);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(cond);
+        iterFunc.accept(thenStmtList);
         if (elseStmtList != null)
-            iterFunc.apply(elseStmtList);
+            iterFunc.accept(elseStmtList);
     }
 }
 
@@ -116,9 +116,9 @@ class ASTUntil extends ASTStmt {
         return al.visitUntil(this);
     }
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(cond);
-        iterFunc.apply(loop);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(cond);
+        iterFunc.accept(loop);
     }
 }
 
@@ -134,9 +134,9 @@ class ASTWhile extends ASTStmt {
         return al.visitWhile(this);
     }
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(cond);
-        iterFunc.apply(loop);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(cond);
+        iterFunc.accept(loop);
     }
 }
 
@@ -153,9 +153,9 @@ class ASTReturn extends ASTStmt {
         return al.visitReturn(this);
     }
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
         if (val != null)
-            iterFunc.apply(val);
+            iterFunc.accept(val);
     }
 }
 
@@ -170,7 +170,7 @@ class ASTNested extends ASTStmt {
         return al.visitNested(this);
     }
     @Override public
-    void foreachChild(java.util.function.Function<ASTNode, Void> iterFunc) {
-        iterFunc.apply(stmtList);
+    void foreachChild(java.util.function.Consumer<ASTNode> iterFunc) {
+        iterFunc.accept(stmtList);
     }
 }

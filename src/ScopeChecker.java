@@ -30,20 +30,23 @@ public class ScopeChecker extends ASTListener<Void> {
 
     @Override
     public Void visitProcUnit(ASTProcUnit ctx) {
-
-        SymbolTable.ValueExpr rType = new SymbolTable.ValueExpr(ctx.returnType.getText(), 0);
+        String rtypeString = ctx.returnType == null ? "void" : ctx.returnType.getText();
+        SymbolTable.ValueExpr rType = new SymbolTable.ValueExpr(rtypeString, 0);
 
         List<SymbolTable.ParameterExpr> paramTypes = new ArrayList<>();
         for (ASTProcUnit.ParaType ptype : ctx.type) {
             paramTypes.add(new SymbolTable.ParameterExpr(ptype.tid.getText(), ptype.dim, ptype.ref));
-            SymbolTable.VarSymbol v = symTable.declareVariable(ptype.var.getText(),
-                    new SymbolTable.ValueExpr(ptype.tid.getText(), ptype.dim));
-            symTable.putSymbol(ptype, v);
         }
 
         Function fDecl = symTable.declareFunction(ctx.pid.getText(), rType, paramTypes, false);
         symTable.putFunction(ctx, fDecl);
         symTable.enterNewScope();
+
+        for (ASTProcUnit.ParaType ptype : ctx.type) {
+            SymbolTable.VarSymbol v = symTable.declareVariable(ptype.var.getText(),
+                    new SymbolTable.ValueExpr(ptype.tid.getText(), ptype.dim));
+            symTable.putSymbol(ptype, v);
+        }
 
         Void ret = visitChildren(ctx);
 
