@@ -161,17 +161,36 @@ public class IRBuilder extends ASTListener<IRChunk> {
 
     @Override
     public IRChunk visitDecl(ASTDecl ctx) {
-        SymbolTable.Symbol v = symTable.getSymbol(ctx);
-        symbolIndex.put(v, incIndex(1));
-        if (ctx.init == null) {
-            return null;
+        SymbolTable.Symbol s = symTable.getSymbol(ctx);
+        symbolIndex.put(s, incIndex(1));
+
+        IRChunk tableInitializer = null;
+        SymbolTable.VarSymbol vs = (SymbolTable.VarSymbol)s;
+        List<Integer> shape = vs.type.getShape();
+        if (shape.size() > 0)
+        {
+            StackIndex prevTop = top;
+            tableInitializer = new IRChunk(){{
+                statements = new ArrayList<>();
+                // need table creation
+                for(int s : shape) {
+                    statements.add(new IRStatement("LOAD", incIndex(1), new Constant(s)));
+                }
+                statements.add(
+                        new IRStatement("NEWTABLE", prevTop, prevTop.offset(1), new Constant(shape.size())));
+            }};
+            top = prevTop;
         }
 
-        IRChunk initializeChunk = ctx.init.visit(this);
-        incIndex(-1);
-        IRChunk movChunk = new IRChunk(new IRStatement("MOVE", top, top.offset(1)));
+        IRChunk initializeChunk = null;
+        if (ctx.init != null) {
+            initializeChunk = ctx.init.visit(this);
+            incIndex(-1);
+            IRChunk movChunk = new IRChunk(new IRStatement("MOVE", top, top.offset(1)));
+            initializeChunk = aggregateResult(initializeChunk, movChunk);
+        }
 
-        return aggregateResult(initializeChunk, movChunk);
+        return aggregateResult(tableInitializer, initializeChunk);
     }
 
     @Override
@@ -259,6 +278,14 @@ public class IRBuilder extends ASTListener<IRChunk> {
         IRChunk callChunk = new IRChunk(new IRStatement("CALL", prevTop, new Constant(3)));
         top = prevTop;
         return aggregateResult(funcChunk, containerChunk, fromChunk, toChunk, callChunk);
+    }
+
+    @Override public IRChunk visitSubscript(ASTSubscript ctx) {
+        IRChunk arrChunk = visit(ctx.arr);
+        IRChunk indexChunk = visit(ctx.index);
+        top = top.offset(-1);
+        IRChunk opChunk = new IRChunk(new IRStatement("GETTABLE", top, top, top.offset(1)));
+        return aggregateResult(arrChunk, indexChunk, opChunk);
     }
 
     @Override

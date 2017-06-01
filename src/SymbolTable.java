@@ -156,15 +156,15 @@ class SymbolTable {
         declarePrimitive("str");
         declarePrimitive("int");
         declarePrimitive("bool");
-        declareFunction("print", new ValueExpr("void", 0),
+        declareFunction("print", new ValueExpr("void"),
                 new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("int", 0, false));
                 }}, false);
-        declareFunction("print", new ValueExpr("void", 0),
+        declareFunction("print", new ValueExpr("void"),
                 new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("str", 0, false));
                 }}, false);
-        declareFunction("print", new ValueExpr("void", 0),
+        declareFunction("print", new ValueExpr("void"),
                 new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("bool", 0, false));
                 }}, false);
@@ -202,7 +202,7 @@ class SymbolTable {
             }
         };
         for (OperatorInfo opInfo : primitiveOperators) {
-            declareFunction("@" + opInfo.name, new ValueExpr(opInfo.rType, 0)
+            declareFunction("@" + opInfo.name, new ValueExpr(opInfo.rType)
                     , new ArrayList<ParameterExpr>() {{
                         for (String paramType : opInfo.args)
                             add(new ParameterExpr(paramType, 0, false));
@@ -293,22 +293,30 @@ class SymbolTable {
 
     static class ValueExpr {
         String typeName;
-        int dimension;
-        ValueExpr(String tName, int dim) {
-            typeName = tName;
-            dimension = dim;
+        List<Integer> shape;
+        ValueExpr(String tName) {
+            this.typeName = tName;
+            this.shape = new ArrayList<>();
+        }
+        ValueExpr(String tName, List<Integer> shape) {
+            this.typeName = tName;
+            this.shape = shape;
         }
     }
     static class ParameterExpr extends ValueExpr {
         boolean isRef;
         ParameterExpr(String name, int dim, boolean _isRef) {
-            super(name, dim);
+            super(name, new ArrayList<Integer>(){{
+                for (int i = 0; i < dim; ++i) {
+                    add(-1);        // 파라미터의 어레이 사이즈는 미리 특정할 수 없음
+                }
+            }});
             isRef = _isRef;
         }
     }
-    ValueType MakeArrayOrSingle(SingleType single, int dim) {
-        if (dim > 0)
-            return new Array(single, dim);
+    ValueType MakeArrayOrSingle(SingleType single, List<Integer> shape) {
+        if (shape.size() > 0)
+            return new Array(single, shape);
         else
             return single;
     }
@@ -330,7 +338,7 @@ class SymbolTable {
             throw new RuntimeException(String.format(
                     "symbol name %s is already defined in this scope", symbolName));
         }
-        VarSymbol retSymbol = new VarSymbol(MakeArrayOrSingle(to, expr.dimension));
+        VarSymbol retSymbol = new VarSymbol(MakeArrayOrSingle(to, expr.shape));
         current.put(symbolName, retSymbol);
         return retSymbol;
     }
@@ -347,7 +355,7 @@ class SymbolTable {
                 throw new RuntimeException(String.format(
                         "No target type named by %s is declared for parameter of %s", paramExpr.typeName, symbolName));
 
-            ValueType paramType = MakeArrayOrSingle(pTo, paramExpr.dimension);
+            ValueType paramType = MakeArrayOrSingle(pTo, paramExpr.shape);
             if (paramExpr.isRef)
                 return new Reference(paramType);
             else

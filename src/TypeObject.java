@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -8,6 +9,7 @@ abstract class TypeObject {
     TypeObject rankDown() { /*throw new RuntimeException(String.format("%s type is not support rank donw", this));*/
         return null;
     }
+    List<Integer> getShape() { return new ArrayList<>(); }
     @Override
     public boolean equals(Object o) {
         return o.getClass().equals(getClass());
@@ -58,33 +60,39 @@ class Alias extends SingleType {
 
 class Array extends ValueType {
     private SingleType base;
-    private int dim;
+    private List<Integer> shape;
 
-    Array (SingleType base, int dim) {
-        if (dim <= 0)
+    Array (SingleType base, List<Integer> shape) {
+        if (shape.size() <= 0)
             throw new RuntimeException("only positive dimension array is available!");
 
         this.base = base;
-        this.dim = dim;
+        this.shape = shape;
     }
 
     @Override
     public String getTypeName() {
-        return base.getTypeName() + String.join("", Collections.nCopies(dim, "[]"));
+        return base.getTypeName() + String.join("", Collections.nCopies(shape.size(), "[]"));
     }
     @Override
-    public String toString() { return String.format("%d dim array of %s", dim, base); }
+    public String toString() { return String.format("%d shape array of %s", shape.size(), base); }
     @Override
     public TypeObject rankDown() {
-        if (dim == 1) {
+        if (shape.size() == 1) {
             return base;
         } else {
-            return new Array(base, dim - 1);
+            List<Integer> downList = new ArrayList<>(shape);
+            downList.remove(0);
+            return new Array(base, downList);
         }
     }
     @Override
+    public List<Integer> getShape() {
+        return shape;
+    }
+    @Override
     public boolean equals(Object o) {
-        return super.equals(o) && ((Array)o).base.equals(base) && ((Array)o).dim == dim;
+        return super.equals(o) && ((Array)o).base.equals(base) && ((Array)o).shape.size() == shape.size();
     }
 }
 
