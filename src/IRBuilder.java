@@ -178,7 +178,7 @@ public class IRBuilder extends ASTListener<IRChunk> {
     public IRChunk visitVariable(ASTVariable ctx) {
         SymbolTable.Symbol s = symTable.getSymbol(ctx);
         if (s instanceof SymbolTable.VarSymbol)
-            return new IRChunk(new IRStatement("LEA", incIndex(1), symbolIndex.get(s)));
+            return new IRChunk(new IRStatement("LOAD", incIndex(1), symbolIndex.get(s)));
         else
             throw new RuleException(ctx, "Identifier에 대한 심볼을 찾을 수 없습니다.(" + s.toString() + ")");
     }
