@@ -6,4 +6,10 @@ public class RuleException extends RuntimeException {
         errorData = ctx.getText();
         localLine = ctx.getLine();
     }
+
+    RuleException(String errData, int line, String reason){
+        super(reason);
+        errorData = errData;
+        localLine = line;
+    }
 }

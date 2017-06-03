@@ -22,6 +22,15 @@ class StackIndex extends IRArgument {
     StackIndex offset(int offset) {
         return new StackIndex(index + offset, globalStack);
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof StackIndex)) {
+            return false;
+        }
+        StackIndex si = (StackIndex)o;
+        return si.globalStack == globalStack && si.index == index;
+    }
 }
 
 class Constant extends IRArgument{
@@ -37,6 +46,14 @@ class Constant extends IRArgument{
     public String toString() {
         return "$" + value;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof Constant))
+            return false;
+        Constant c = (Constant) o;
+        return c.value.equals(value);
+    }
 }
 
 class RawArg extends IRArgument {
@@ -49,15 +66,31 @@ class RawArg extends IRArgument {
     public String toString() {
         return arg;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (!(o instanceof RawArg))
+            return false;
+        RawArg c = (RawArg) o;
+        return c.arg.equals(arg);
+    }
 }
 
 class IRStatement {
     String stmt;
+    String command;
     IRStatement(String command, IRArgument ... arguments) {
+        this.command = command;
         stmt = command;
         if (arguments.length > 0)
-        stmt += " " + String.join(" ",
-                Arrays.stream(arguments).map(Object::toString).collect(Collectors.toList()));
+        {
+            for (IRArgument arg : arguments) {
+                if (arg == null)
+                    throw new RuleException("??", 0, String.format("IRArgument is null (command: %s)", command));
+            }
+            stmt += " " + String.join(" ",
+                    Arrays.stream(arguments).map(Object::toString).collect(Collectors.toList()));
+        }
     }
     @Override
     public String toString() {
@@ -68,10 +101,8 @@ class IRStatement {
 class IRChunk {
     IRChunk() {
     }
-    IRChunk(IRStatement one) {
-        statements = new ArrayList<IRStatement>(){{
-            add(one);
-        }};
+    IRChunk(IRStatement ...stmts) {
+        statements = Arrays.stream(stmts).collect(Collectors.toList());
     }
     int size() {
         return statements.size();
@@ -79,10 +110,28 @@ class IRChunk {
     List<IRStatement> statements;
 }
 
-public class IRBuilder extends ASTListener<IRChunk> {
+class IRCA {
+    IRArgument argument;
+    IRChunk chunk;
+    IRCA(IRChunk chunk, IRArgument arg) {
+        this.chunk = chunk;
+        this.argument = arg;
+    }
+    IRCA(IRChunk chunk) {
+        this.chunk = chunk;
+        this.argument = null;
+    }
+    IRCA(IRArgument arg) {
+        this.argument = arg;
+        this.chunk = null;
+    }
+}
+
+public class IRBuilder extends ASTListener<IRCA> {
     StackIndex top;
     Map<SymbolTable.Symbol, StackIndex> symbolIndex = new HashMap<>();
     SymbolTable symTable;
+    StackIndex returnIndex;
 
     IRBuilder(StackIndex globalIndex, SymbolTable symTable) {
         top = globalIndex;
@@ -95,34 +144,59 @@ public class IRBuilder extends ASTListener<IRChunk> {
     }
 
     @Override
-    public IRChunk aggregateResult(IRChunk aggregate, IRChunk nextResult) {
-        if (aggregate == null)
-            return nextResult;
-        if (nextResult == null)
-            return aggregate;
-        return new IRChunk() {{
-            statements = Stream.concat(aggregate.statements.stream(), nextResult.statements.stream()).collect(Collectors.toList());
-        }};
+    public IRCA aggregateResult(IRCA aggregate, IRCA nextResult) {
+        IRChunk aggChunk = aggregate != null ? aggregate.chunk : null;
+        IRChunk nextChunk = nextResult != null ? nextResult.chunk : null;
+        IRChunk aggResultChunk;
+        if (aggChunk == null)
+            aggResultChunk = nextChunk;
+        else if (nextChunk == null)
+            aggResultChunk = aggChunk;
+        else {
+            aggResultChunk = new IRChunk(){{
+                statements = Stream.concat(aggChunk.statements.stream(), nextChunk.statements.stream())
+                        .collect(Collectors.toList());
+            }};
+        }
+
+        IRArgument argument = nextResult != null ? nextResult.argument : null;
+
+        return new IRCA(aggResultChunk, argument);
     }
 
-    IRChunk aggregateResult(IRChunk ...chunks) {
-        return new IRChunk(){{
-            statements = Arrays.stream(chunks).filter(Objects::nonNull)
-                .map(c -> c.statements)
-                .flatMap(List::stream)
-                .collect(Collectors.toList());
-        }};
+    IRCA aggregateResult(IRCA ...results) {
+        return new IRCA(new IRChunk(){{
+            statements = Arrays.stream(results).filter(Objects::nonNull)
+                    .map(c -> c.chunk)
+                    .filter(Objects::nonNull)
+                    .map(c -> c.statements)
+                    .flatMap(List::stream)
+                    .collect(Collectors.toList());
+        }}, results[results.length -1].argument);
+    }
+
+    IRCA visitWithIncIndex(ASTNode n, boolean ref) {
+        StackIndex target = top.offset(1);
+        IRCA irca = visit(n);
+        if (irca.argument.equals(target))
+            return irca;
+        else
+        {
+            top = target;
+            return aggregateResult(irca,
+                    new IRCA(new IRChunk(new IRStatement(ref ? "LOAD" : "MOVE", target, irca.argument)), top));
+        }
     }
 
     @Override
-    public IRChunk visitProcUnit(ASTProcUnit ctx) {
+    public IRCA visitProcUnit(ASTProcUnit ctx) {
         Function fDecl = symTable.getFunction(ctx);
         String funcName = ctx.pid.getText() + fDecl.getDecorator();
-        IRChunk functionBegin = new IRChunk() {{
+        IRCA functionBegin = new IRCA(new IRChunk() {{
             statements = new ArrayList<IRStatement>() {{
                 add(new IRStatement("PROC", new RawArg(funcName)));
             }};
-        }};
+        }});
 
         StackIndex prevTop = top;
         top = new StackIndex(0, false);
@@ -133,174 +207,207 @@ public class IRBuilder extends ASTListener<IRChunk> {
             symbolIndex.put(paramSymbol, incIndex(1));
         }
 
-        IRChunk blockChunk = ctx.stmtList.visit(this);
-        int maxLine = blockChunk.statements.size();
+        IRStatement retStmt = null;
+        if (fDecl.rType.getTypeName().equals("void")) {
+            returnIndex = null;
+            retStmt = new IRStatement("RET");
+        }
+        else {
+            returnIndex = top.offset(1);  // 인자를 다 할당하고 난 후의 처음 인덱스. 즉 로컬변수의 첫번째 인덱스인데 이녀석을 리턴 인덱스로 이용한다.
+            retStmt = new IRStatement("RET", returnIndex);
+        }
+
+
+        IRCA blockChunk = ctx.stmtList.visit(this);
+        int maxLine = blockChunk.chunk.statements.size();
         for (int i = 0; i < maxLine; ++i) {
-            IRStatement stmt = blockChunk.statements.get(i);
-            if (stmt.stmt.equals("TEMP_RET")) {
+            IRStatement stmt = blockChunk.chunk.statements.get(i);
+            if (stmt.command.equals("TEMP_RET")) {
                 if (i < maxLine - 1)
-                    blockChunk.statements.set(i, new IRStatement("JMP", new Constant(maxLine - i - 1)));
+                    blockChunk.chunk.statements.set(i, new IRStatement("JMP", new Constant(maxLine - i - 1)));
                 else
                     // 마지막 줄이라 하더라도 줄을 지우면 그 위에서 명령줄의 수를 이용해서 작성해놓은 로직이 무너질 수 있음.
-                    blockChunk.statements.set(i, new IRStatement("NOP"));
+                    blockChunk.chunk.statements.set(i, new IRStatement("NOP"));
             }
         }
 
         top = prevTop;
 
-        return aggregateResult(functionBegin, blockChunk, new IRChunk(new IRStatement("RET", new StackIndex(1, false))));
+        return aggregateResult(functionBegin, blockChunk, new IRCA(new IRChunk(retStmt)));
     }
 
     @Override
-    public IRChunk visitStmtList(ASTStmtList ctx) {
-        IRChunk base = new IRChunk(){{
+    public IRCA visitStmtList(ASTStmtList ctx) {
+        IRCA base = new IRCA(new IRChunk(){{
                 statements = new ArrayList<>();
-        }};
+        }});
         return aggregateResult(base, visitChildren(ctx));
     }
 
     @Override
-    public IRChunk visitDecl(ASTDecl ctx) {
+    public IRCA visitDecl(ASTDecl ctx) {
         SymbolTable.Symbol s = symTable.getSymbol(ctx);
         symbolIndex.put(s, incIndex(1));
+        StackIndex target = top;
 
-        IRChunk tableInitializer = null;
+        IRCA stackInitializer = null;
         SymbolTable.VarSymbol vs = (SymbolTable.VarSymbol)s;
         List<Integer> shape = vs.type.getShape();
         if (shape.size() > 0)
         {
-            StackIndex prevTop = top;
-            tableInitializer = new IRChunk(){{
+            stackInitializer = new IRCA(new IRChunk(){{
                 statements = new ArrayList<>();
                 // need table creation
                 for(int s : shape) {
                     statements.add(new IRStatement("LOAD", incIndex(1), new Constant(s)));
                 }
                 statements.add(
-                        new IRStatement("NEWTABLE", prevTop, prevTop.offset(1), new Constant(shape.size())));
-            }};
-            top = prevTop;
+                        new IRStatement("NEWTABLE", target, target.offset(1), new Constant(shape.size())));
+            }});
         }
 
-        IRChunk initializeChunk = null;
+        IRCA initializeChunk = null;
         if (ctx.init != null) {
             initializeChunk = ctx.init.visit(this);
-            incIndex(-1);
-            IRChunk movChunk = new IRChunk(new IRStatement("MOVE", top, top.offset(1)));
-            initializeChunk = aggregateResult(initializeChunk, movChunk);
+            if (initializeChunk.argument instanceof Constant) {
+                stackInitializer = null;        // 초기화가
+                initializeChunk = aggregateResult(initializeChunk,
+                        new IRCA(new IRChunk(new IRStatement("LOAD", target, initializeChunk.argument))));
+            } else
+                initializeChunk = aggregateResult(initializeChunk,
+                        new IRCA(new IRChunk(new IRStatement("LOAD", target, new Constant(0)),
+                                new IRStatement("MOVE", target, initializeChunk.argument))));
         }
+        else if (shape.size() == 0)
+            initializeChunk = new IRCA(new IRChunk(new IRStatement("LOAD", target, new Constant(0))));
+        top = target;
 
-        return aggregateResult(tableInitializer, initializeChunk);
+        return aggregateResult(stackInitializer, initializeChunk);
     }
 
     @Override
-    public IRChunk visitVariable(ASTVariable ctx) {
+    public IRCA visitVariable(ASTVariable ctx) {
         SymbolTable.Symbol s = symTable.getSymbol(ctx);
         if (s instanceof SymbolTable.VarSymbol)
-            return new IRChunk(new IRStatement("LOAD", incIndex(1), symbolIndex.get(s)));
+            return new IRCA(symbolIndex.get(s));
         else
-            throw new RuleException(ctx, "Identifier에 대한 심볼을 찾을 수 없습니다.(" + s.toString() + ")");
+            throw new RuleException(ctx, "Identifier에 대한 심볼 인덱스를 찾을 수 없습니다.(" + s.toString() + ")");
     }
 
     @Override
-    public IRChunk visitConstant(ASTConstant ctx) {
-        return new IRChunk(new IRStatement("LOAD", incIndex(1), new Constant(ctx.token.getText())));
+    public IRCA visitConstant(ASTConstant ctx) {
+        return new IRCA(new Constant(ctx.token.getText()));
     }
 
     @Override
-    public IRChunk visitAsgn(ASTAsgn ctx) {
+    public IRCA visitAsgn(ASTAsgn ctx) {
         StackIndex prevTop = top;
-        IRChunk dest = ctx.lval.visit(this);
-        IRChunk source = ctx.rval.visit(this);
+        IRCA dest = ctx.lval.visit(this);
+        IRCA source = ctx.rval.visit(this);
 
         top = prevTop;
-        IRChunk move = new IRChunk(new IRStatement("MOVE", top.offset(1), top.offset(2)));
+        IRCA move = new IRCA(new IRChunk(new IRStatement("MOVE", dest.argument, source.argument)));
         return aggregateResult(dest, source, move);
     }
 
     @Override
-    public IRChunk visitCond(ASTCond ctx) {
+    public IRCA visitCond(ASTCond ctx) {
         StackIndex prevTop = top;
-        IRChunk elsePart = ctx.elseStmtList != null ? ctx.elseStmtList.visit(this) : null;
+        IRCA elsePart = ctx.elseStmtList != null ? ctx.elseStmtList.visit(this) : null;
         top = prevTop;
-        IRChunk ifPart = ctx.thenStmtList.visit(this);
+        IRCA ifPart = ctx.thenStmtList.visit(this);
         top = prevTop;
 
-        elsePart = aggregateResult(elsePart, new IRChunk(new IRStatement("JMP", new Constant(ifPart.size()))));
+        elsePart = aggregateResult(elsePart, new IRCA(
+                new IRChunk(new IRStatement("JMP", new Constant(ifPart.chunk.size())))));
 
-        IRChunk exprChunk = ctx.cond.visit(this);
-        IRChunk testChunk = new IRChunk(new IRStatement("TEST", top, new Constant(elsePart.size())));
+        IRCA condIrca = ctx.cond.visit(this);
+        IRCA testChunk = new IRCA(
+                new IRChunk(new IRStatement("TEST", condIrca.argument, new Constant(elsePart.chunk.size()))));
         top = prevTop;
-        return aggregateResult(exprChunk, testChunk, elsePart, ifPart);
+        return aggregateResult(condIrca, testChunk, elsePart, ifPart);
     }
 
-    @Override public IRChunk visitUntil(ASTUntil ctx) {
+    @Override public IRCA visitUntil(ASTUntil ctx) {
         StackIndex prevTop = top;
-        IRChunk stmtChunk = visit(ctx.loop);
+        IRCA stmtChunk = visit(ctx.loop);
         top = prevTop;
-        IRChunk exprChunk = visit(ctx.cond);
+        IRCA condIrca = visit(ctx.cond);
 
-        IRChunk testChunk = new IRChunk(
-                new IRStatement("TEST", top, new Constant(-(stmtChunk.size() + exprChunk.size() + 1))));
+        IRCA testChunk = new IRCA(new IRChunk(
+                new IRStatement("TEST", condIrca.argument, new Constant(-(stmtChunk.chunk.size() + condIrca.chunk.size() + 1)))));
         top = prevTop;
-        return aggregateResult(stmtChunk, exprChunk, testChunk);
+        return aggregateResult(stmtChunk, condIrca, testChunk);
     }
 
-    @Override public IRChunk visitWhile(ASTWhile ctx) {
+    @Override public IRCA visitWhile(ASTWhile ctx) {
         StackIndex prevTop = top;
-        IRChunk stmtChunk = visit(ctx.loop);
+        IRCA stmtChunk = visit(ctx.loop);
         top = prevTop;
-        IRChunk exprChunk = visit(ctx.cond);
+        IRCA condIrca = visit(ctx.cond);
 
-        IRChunk testChunk = new IRChunk(
-                new IRStatement("TEST", top, new Constant(-(stmtChunk.size() + exprChunk.size() + 1))));
+        IRCA testChunk = new IRCA(new IRChunk(
+                new IRStatement("TEST", condIrca.argument,
+                        new Constant(-(stmtChunk.chunk.size() + condIrca.chunk.size() + 1)))));
         top = prevTop;
-        return aggregateResult(new IRChunk(new IRStatement("JMP", new Constant(stmtChunk.size()))),
-                stmtChunk, exprChunk, testChunk);
+        return aggregateResult(new IRCA(new IRChunk(new IRStatement("JMP", new Constant(stmtChunk.chunk.size())))),
+                stmtChunk, condIrca, testChunk);
     }
 
-    @Override public IRChunk visitReturn(ASTReturn ctx) {
-        IRChunk retExprChunk = ctx.val != null ? visit(ctx.val) : null;
-        IRChunk moveRetValueChunk = new IRChunk(
-                new IRStatement("MOVE", new StackIndex(1, false), top));
-        return aggregateResult(retExprChunk, moveRetValueChunk, new IRChunk(new IRStatement("TEMP_RET")));
+    @Override public IRCA visitReturn(ASTReturn ctx) {
+        IRCA retExprChunk = null;
+        if (ctx.val != null)
+        {
+            retExprChunk = visit(ctx.val);
+            if (!retExprChunk.argument.equals(returnIndex)) {
+                retExprChunk = aggregateResult(retExprChunk,
+                        new IRCA(new IRChunk(new IRStatement("MOVE", returnIndex, retExprChunk.argument))));
+            }
+        }
+        return aggregateResult(retExprChunk, new IRCA(new IRChunk(new IRStatement("TEMP_RET"))));
     }
 
-    @Override public IRChunk visitSubstring(ASTSubstring ctx) {
+    @Override public IRCA visitSubstring(ASTSubstring ctx) {
         // Substring은 언어단에서 지원하는 기능이지만 IRCode에서 바로 지원하지 않고 시스템 콜 함수를 이용할 계획
         // d = substring(a, b, c)와 같이 생각하자
-        IRChunk funcChunk = new IRChunk(
-                new IRStatement("LOAD", incIndex(1), new Constant("\"substring@str\"")));
+        IRCA funcChunk = new IRCA(new IRChunk(
+                new IRStatement("LOAD", incIndex(1), new Constant("\"substring@str\""))));
         StackIndex prevTop = top;
-        IRChunk containerChunk = visit(ctx.str);
-        IRChunk fromChunk = visit(ctx.index1);
-        IRChunk toChunk = visit(ctx.index2);
-        IRChunk callChunk = new IRChunk(new IRStatement("CALL", prevTop, new Constant(3)));
+        IRCA containerChunk = visitWithIncIndex(ctx.str, false);
+        IRCA fromChunk = visitWithIncIndex(ctx.index1, false);
+        IRCA toChunk = visitWithIncIndex(ctx.index2, false);
+        IRCA callChunk = new IRCA(new IRChunk(new IRStatement("CALL", prevTop, new Constant(3))));
         top = prevTop;
         return aggregateResult(funcChunk, containerChunk, fromChunk, toChunk, callChunk);
     }
 
-    @Override public IRChunk visitSubscript(ASTSubscript ctx) {
-        IRChunk arrChunk = visit(ctx.arr);
-        IRChunk indexChunk = visit(ctx.index);
-        top = top.offset(-1);
-        IRChunk opChunk = new IRChunk(new IRStatement("GETTABLE", top, top, top.offset(1)));
+    @Override public IRCA visitSubscript(ASTSubscript ctx) {
+        StackIndex target = top.offset(1);
+        IRCA arrChunk = visit(ctx.arr);
+        IRCA indexChunk = visit(ctx.index);
+
+        top = target;
+        IRCA opChunk = new IRCA(new IRChunk(
+                new IRStatement("GETTABLE", target, arrChunk.argument, indexChunk.argument)), target);
         return aggregateResult(arrChunk, indexChunk, opChunk);
     }
 
     @Override
-    public IRChunk visitUnary(ASTUnary ctx) {
-        IRChunk oprandChunk = visit(ctx.oprnd);
+    public IRCA visitUnary(ASTUnary ctx) {
+        StackIndex target = top.offset(1);
+        IRCA oprandChunk = visit(ctx.oprnd);
         if (ctx.op.getType() == SimpleParser.ADD)
             return oprandChunk;
-        else if (ctx.op.getType() == SimpleParser.SUB) {
-            IRChunk opChunk = new IRChunk(new IRStatement("UMN", top, top));
+
+        top = target;
+        if (ctx.op.getType() == SimpleParser.SUB) {
+            IRCA opChunk = new IRCA(new IRChunk(new IRStatement("UMN", target, oprandChunk.argument)), target);
             return aggregateResult(oprandChunk, opChunk);
         } else if (ctx.op.getType() == SimpleParser.NOT) {
-            IRChunk opChunk = new IRChunk(new IRStatement("NOT", top, top));
+            IRCA opChunk = new IRCA(new IRChunk(new IRStatement("NOT", target, oprandChunk.argument)), target);
             return aggregateResult(oprandChunk, opChunk);
         } else
-            return null;
+            throw new RuleException(ctx, "Undefined unary operator");
     }
 
     private String OperatorTranslator(int opToken) {
@@ -341,25 +448,39 @@ public class IRBuilder extends ASTListener<IRChunk> {
     }
 
     @Override
-    public IRChunk visitBinary(ASTBinary ctx) {
-        IRChunk oprnd1Chunk = visit(ctx.oprnd1);
-        IRChunk oprnd2Chunk = visit(ctx.oprnd2);
-        top = top.offset(-1);
-        IRChunk opChunk = new IRChunk(new IRStatement(OperatorTranslator(ctx.op.getType()), top, top, top.offset(1)));
+    public IRCA visitBinary(ASTBinary ctx) {
+        StackIndex target = top.offset(1);
+        IRCA oprnd1Chunk = visit(ctx.oprnd1);
+        IRCA oprnd2Chunk = visit(ctx.oprnd2);
+        IRCA opChunk = new IRCA(
+                new IRChunk(
+                        new IRStatement(
+                                OperatorTranslator(ctx.op.getType()),
+                                target,
+                                oprnd1Chunk.argument,
+                                oprnd2Chunk.argument)
+                ),
+                target
+        );
+        top = target;
+
         return aggregateResult(oprnd1Chunk, oprnd2Chunk, opChunk);
     }
 
-    @Override public IRChunk visitProcCall(ASTProcCall ctx) {
+    @Override public IRCA visitProcCall(ASTProcCall ctx) {
         Function f = symTable.getFunction(ctx);
-        IRChunk funcChunk = new IRChunk(
+        IRCA funcChunk = new IRCA(new IRChunk(
                 new IRStatement("LOAD", incIndex(1),
-                        new Constant("\"" + ctx.pid.getText() + f.getDecorator() + "\"")));
-        StackIndex nextTop = top;
-        List<IRChunk> exprs = ctx.param.stream().map(this::visit).collect(Collectors.toList());
-        IRChunk parameterChunk = aggregateResult(exprs.toArray(new IRChunk[exprs.size()]));
-        IRChunk callChunk = new IRChunk(
-                new IRStatement("CALL", nextTop, new Constant(top.index - nextTop.index)));
-        top = nextTop;
+                        new Constant("\"" + ctx.pid.getText() + f.getDecorator() + "\""))));
+        StackIndex target = top;
+        List<IRCA> exprs = new ArrayList<>();
+        for (int i = 0; i < f.acceptParams.size(); ++i) {
+            exprs.add(visitWithIncIndex(ctx.param.get(i), f.acceptParams.get(i) instanceof Reference));
+        }
+        IRCA parameterChunk = aggregateResult(exprs.toArray(new IRCA[exprs.size()]));
+        IRCA callChunk = new IRCA(new IRChunk(
+                new IRStatement("CALL", target, new Constant(top.index - target.index))), target);
+        top = target;
         return aggregateResult(funcChunk, parameterChunk, callChunk);
     }
 }

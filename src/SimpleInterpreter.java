@@ -174,9 +174,9 @@ public class SimpleInterpreter {
 
             // IR Code Generation
             IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
-            IRChunk chunk = irBuilder.visit(prgm);
+            IRCA prgmChunk = irBuilder.visit(prgm);
             System.out.println("----IR CODE GENERATION----");
-            for (IRStatement stmt : chunk.statements) {
+            for (IRStatement stmt : prgmChunk.chunk.statements) {
                 System.out.println(stmt.toString());
             }
             globalIndex = irBuilder.top;
