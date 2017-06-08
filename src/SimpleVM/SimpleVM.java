@@ -1,118 +1,259 @@
 package SimpleVM;
-import java.io.*;
 import java.util.*;
+import java.util.function.*;
 
-class DataRegister {
-    Object[] data;
-    int base;
-
-    DataRegister() {
-        data = new Object[256];
-    }
-
-    Object read(Operand idx) {
-        switch (idx.mode) {
-            case CONST:
-                return idx.val;
-            case LOCAL:
-                return data[base + (int)idx.val];
-            case GLOBAL:
-                return data[(int)idx.val];
-            default:
-                return null;
-        }
-    }
-
-    void write(Operand idx, Object val) {
-        switch (idx.mode) {
-            case LOCAL:
-                data[base + (int)idx.val] = val;
-                break;
-            case GLOBAL:
-                data[(int)idx.val] = val;
-                break;
-            default:
-                break;
-        }
-    }
-
-    private Object[] recursiveTable(List<Integer> size) {
-        return null;
-    }
-
-    void makeTable(Operand a, Operand b, Operand c) {
-        return;
-    }
-
-    void readTable(Operand a, Operand b, Operand c) {
-        data[base + (int)a.val] = ((Object[])data[base + (int)b.val])[(int)data[base + (int)c.val]];
-    }
-}
-
-class InstRegister {
-    Instruction[] proc;
-    int idx;
-
-    InstRegister() {
-        proc = new Instruction[0];
-    }
-
-    InstRegister(Instruction[] inst) {
-        proc = inst;
-    }
-
-    Instruction getInst() {
-        return proc[idx++];
-    }
-}
-
-enum FlagRegister {
-    Default,	Overflow,	Underflow,
-    Div_Zero,	Out_Arr,	Out_Proc,
-    Unhandled
-}
-
-class CallStack {
-    static class ProcContext {
-        Instruction[] proc;
-        int idx;
-        int base;
-    }
-
-    private Stack<ProcContext> stack;
-
-    CallStack() {
-        stack = new Stack<>();
-    }
-
-    void push(Instruction[] proc, int idx, int base) {
-        ProcContext ctx = new ProcContext();
-        ctx.proc = proc;
-        ctx.idx = idx;
-        ctx.base = base;
-        stack.push(ctx);
-    }
-
-    ProcContext pop() {
-        return stack.pop();
-    }
-}
-
+/* Singleton Class */
 public class SimpleVM  {
-    private DataRegister dataReg;
-    private InstRegister instReg;
-    private FlagRegister flagReg;
-    private CallStack callStk;
-    private HashMap<String, Instruction[]> procMap;
+    static final int size = 256;
+    private static SimpleVM vm;
 
-    SimpleVM() {
-        dataReg = new DataRegister();
-        instReg = new InstRegister();
-        flagReg = FlagRegister.Default;
+    private DataReg dataReg;
+    private InstReg instReg;
+    private CallStack callStk;
+    private HashMap<String, Inst[]> procMap;
+
+    private SimpleVM() {
+        dataReg = new DataReg();
+        instReg = new InstReg();
         callStk = new CallStack();
         procMap = new HashMap<>();
     }
 
+    private boolean stepInst() {
+        Inst inst = instReg.getInst();
+        switch (inst.code) {
+            case NOP_:
+                break;
+            case MOVE_RR: {
+                Reg dst = (Reg) inst.opd[0];
+                Reg src = (Reg) inst.opd[1];
+                dataReg.write(dst, Data.copy(dataReg.read(src)));
+            }
+            break;
+            case MOVE_RI: {
+                Reg dst = (Reg) inst.opd[0];
+                Data src = (Data) inst.opd[1];
+                Data.vchg(dataReg.read(dst), src);
+            }
+            break;
+            case LOAD_RR: {
+                Reg dst = (Reg) inst.opd[0];
+                Reg src = (Reg) inst.opd[1];
+                Data.vchg(dataReg.read(dst), dataReg.read(src));
+            }
+            break;
+            case LOAD_RI: {
+                Reg dst = (Reg) inst.opd[0];
+                Data src = (Data) inst.opd[1];
+                dataReg.write(dst, Data.copy(src));
+            }
+            break;
+            case GET_TABLE_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Reg src = (Reg) inst.opd[1];
+                int idx = ((Int) inst.opd[2]).v;
+                dataReg.readTable(dst, src, idx);
+            }
+            break;
+            case GET_TABLE_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Reg src = (Reg) inst.opd[1];
+                int idx = ((Int) dataReg.read((Reg) inst.opd[2])).v;
+                dataReg.readTable(dst, src, idx);
+            }
+            break;
+            case NEW_TABLE_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Reg src = (Reg) inst.opd[1];
+                int dim = ((Int) inst.opd[2]).v;
+                dataReg.loadTable(dst, src, dim);
+            }
+            break;
+            case JMP_I: {
+                int dst = ((Int) inst.opd[0]).v;
+                instReg.inst += dst;
+            }
+            break;
+            case TEST_RI: {
+                boolean cond = ((Bool) dataReg.read((Reg) inst.opd[0])).v;
+                int dst = ((Int) inst.opd[1]).v;
+                if (cond) instReg.inst += dst;
+            }
+            break;
+            case CALL_RI: {
+                Reg src = (Reg) inst.opd[0];
+                String proc = ((Str) dataReg.read(src)).v;
+                switch (proc) {
+                    case "print":
+                        System.out.println(dataReg.data[dataReg.base + src.v + 1]);
+                        break;
+                    case "concat@str@str": {
+                        Str str1 = (Str) dataReg.data[dataReg.base + src.v + 1];
+                        Str str2 = (Str) dataReg.data[dataReg.base + src.v + 2];
+                        dataReg.write(src, Str.concat(str1, str2));
+                    }
+                    break;
+                    case "substr@str@int@int": {
+                        Str str = (Str) dataReg.data[dataReg.base + src.v + 1];
+                        Int from = (Int) dataReg.data[dataReg.base + src.v + 2];
+                        Int to = (Int) dataReg.data[dataReg.base + src.v + 3];
+                        dataReg.write(src, Str.substr(str, from, to));
+                    }
+                    break;
+                    default: {
+                        if (!callStk.push(instReg.proc, instReg.inst, dataReg.base))
+                            throw new SimpleException(ErrorCode.StackOverflow);
+                        instReg.proc = procMap.get(proc);
+                        instReg.inst = 0;
+                        dataReg.base = src.v;
+                    }
+                    break;
+                }
+            }
+            break;
+            case RET_R: {
+                Reg dst = new Reg(true, 0);
+                Reg src = (Reg) inst.opd[0];
+                dataReg.write(dst, Data.copy(dataReg.read(src)));
+                if (!callStk.pop())
+                    return false;
+                instReg.proc = callStk.topPR();
+                instReg.inst = callStk.topIR();
+                dataReg.base = callStk.topBR();
+            }
+            break;
+            case UMN_RR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src = (Int) dataReg.read((Reg) inst.opd[1]);
+                dataReg.write(dst, Int.umn(src));
+            }
+            break;
+            case UMN_RI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src = (Int) inst.opd[1];
+                dataReg.write(dst, Int.umn(src));
+            }
+            break;
+            case NOT_RR: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src = (Bool) dataReg.read((Reg) inst.opd[1]);
+                dataReg.write(dst, Bool.not(src));
+            }
+            break;
+            case NOT_RI: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src = (Bool) inst.opd[1];
+                dataReg.write(dst, Bool.not(src));
+            }
+            break;
+            case ADD_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.add(src1, src2));
+            }
+            break;
+            case ADD_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.add(src1, src2));
+            }
+            break;
+            case ADD_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.add(src1, src2));
+            }
+            break;
+            case ADD_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.add(src1, src2));
+            }
+            break;
+            case SUB_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.sub(src1, src2));
+            }
+            break;
+            case SUB_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.sub(src1, src2));
+            }
+            break;
+            case SUB_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.sub(src1, src2));
+            }
+            break;
+            case SUB_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.sub(src1, src2));
+            }
+            break;
+            case MUL_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.mul(src1, src2));
+            }
+            break;
+            case MUL_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.mul(src1, src2));
+            }
+            break;
+            case MUL_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.mul(src1, src2));
+            }
+            break;
+            case MUL_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.mul(src1, src2));
+            }
+            break;
+        }
+        return true;
+    }
+
+    public static void
+    init() {
+        vm = new SimpleVM();
+
+        List<String> inst = new LinkedList<>();
+        inst.add("LOAD 2 $3");
+        inst.add("LOAD 3 $3");
+        inst.add("NEW_TABLE 1 2 $2");
+        inst.add("GET_TABLE 5 1 $1");
+        inst.add("GET_TABLE 6 5 $2");
+        inst.add("MOVE 6 $7");
+        inst.add("LOAD 0 $\"print\"");
+        inst.add("CALL 0 $1");
+        inst.add("RET 0");
+
+        loadInst(null, inst);
+        execInst();
+    }
+
+    /*
     SimpleVM(String fileName) throws IOException {
         super();
         File IRCodeFile = new File(fileName);
@@ -126,7 +267,7 @@ public class SimpleVM  {
         while ((line = bufferedReader.readLine()) != null) {
             String inst = line;
             if(inst.split(" ")[0] == "PROC") {
-                loadIR(procName, insts);
+                loadInst(procName, insts);
                 insts = new ArrayList<>();
                 procName = inst.split(" ")[1].split("@")[0];
             }
@@ -134,149 +275,27 @@ public class SimpleVM  {
                 insts.add(inst);
             }
         }
-        loadIR(procName, insts);
+        loadInst(procName, insts);
         fileReader.close();
         // End of ProcMap construction
 
-        instReg = new InstRegister(procMap.get(null));
+        instReg = new InstReg(procMap.get(null));
         run();
     }
+    */
 
-    void loadIR(String pid, List<String> ir) {
-        Instruction[] inst = ir.stream()
-                .map(Instruction::valueOf)
-                .toArray(size -> new Instruction[size]);
-        procMap.put(pid, inst);
+    public static void
+    loadInst(String proc, List<String> ir) {
+        Inst[] inst = ir.stream()
+                .map(Inst::valueOf)
+                .toArray((IntFunction<Inst[]>) Inst[]::new);
+        vm.procMap.put(proc, inst);
+        vm.instReg.proc = inst;
     }
 
-    boolean step() {
-        Instruction inst = instReg.getInst();
-        try {
-            switch (inst.op) {
-                case NOP:
-                    break;
-                case MOVE:
-                    // TODO: Deep Copy
-                    break;
-                case LOAD:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            dataReg.read(inst.oprnd[1])
-                    );
-                    break;
-                case UMN:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            -(Integer) dataReg.read(inst.oprnd[1])
-                    );
-                    break;
-                case NOT:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            !(Boolean) dataReg.read(inst.oprnd[1])
-                    );
-                    break;
-                case ADD:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) + (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case SUB:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) - (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case MUL:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) * (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case DIV:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) / (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case POW:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            Math.pow((Integer) dataReg.read(inst.oprnd[1]), (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case EQ:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            Objects.equals(dataReg.read(inst.oprnd[1]), dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case NE:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            !Objects.equals(dataReg.read(inst.oprnd[1]), dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case LT:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) < (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case LE:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) <= (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case GT:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) > (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case GE:
-                    dataReg.write(
-                            inst.oprnd[0],
-                            ((Integer) dataReg.read(inst.oprnd[1]) >= (Integer) dataReg.read(inst.oprnd[2]))
-                    );
-                    break;
-                case JMP:
-                    instReg.idx += (Integer) dataReg.read(inst.oprnd[0]);
-                    break;
-                case TEST:
-                    if ((Boolean) dataReg.read(inst.oprnd[0]))
-                        instReg.idx += (Integer) dataReg.read(inst.oprnd[1]);
-                    break;
-                case CALL:
-                    callStk.push(instReg.proc, instReg.idx, dataReg.base);
-                    instReg = new InstRegister(procMap.get((String) dataReg.read(inst.oprnd[0])));
-                    dataReg.base = (Integer) inst.oprnd[1].val;
-                    break;
-                case RET:
-                    if (inst.oprnd.length != 0)
-                        dataReg.data[dataReg.base] = dataReg.read(inst.oprnd[0]);
-                    CallStack.ProcContext ctx = callStk.pop();
-                    instReg.proc = ctx.proc;
-                    instReg.idx = ctx.idx;
-                    dataReg.base = ctx.base;
-                    break;
-                case GET_TABLE:
-                    dataReg.readTable(inst.oprnd[0], inst.oprnd[1], inst.oprnd[2]);
-                    break;
-                case NEW_TABLE:
-                    dataReg.makeTable(inst.oprnd[0], inst.oprnd[1], inst.oprnd[2]);
-                    break;
-            }
-            return true;
-        }
-        catch (Exception e) {
-            return false;
-        }
-    }
+    public static void
+    execInst() { while (vm.stepInst()); }
 
-    boolean run() {
-        return step();
-    }
+    public static void
+    printReg(String str) { System.out.println(vm.dataReg.read(Reg.valueOf(str))); }
 }

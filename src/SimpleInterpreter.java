@@ -2,6 +2,7 @@ import java.io.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.apache.commons.cli.*;
+import SimpleVM.*;
 
 public class SimpleInterpreter {
     static int totalLines = 0;
@@ -90,6 +91,8 @@ public class SimpleInterpreter {
         CodeReader cr = new CodeReader(is);
 
         SymbolTable symTable = new SymbolTable();
+
+        SimpleVM.init();
 
         InterpretProgramViaStream(cr, symTable, config);
     }
