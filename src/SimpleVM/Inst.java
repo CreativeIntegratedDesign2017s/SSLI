@@ -46,7 +46,7 @@ class Inst {
     Code code;
     Object[] opd;
 
-    Inst(Code c, Object[] d) { code = c; opd = d; }
+    private Inst(Code c, Object[] d) { code = c; opd = d; }
 
     static Inst valueOf(String[] token) {
         StringBuilder codeStr = new StringBuilder(token[0]).append("_");
