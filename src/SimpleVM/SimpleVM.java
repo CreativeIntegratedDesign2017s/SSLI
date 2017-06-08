@@ -39,7 +39,7 @@ public class SimpleVM  {
             case LOAD_RR: {
                 Reg dst = (Reg) inst.opd[0];
                 Reg src = (Reg) inst.opd[1];
-                Data.vchg(dataReg.read(dst), dataReg.read(src));
+                dataReg.write(dst, dataReg.read(src));
             }
             break;
             case LOAD_RI: {
