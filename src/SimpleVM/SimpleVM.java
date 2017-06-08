@@ -124,6 +124,25 @@ public class SimpleVM  {
                 dataReg.base = callStk.topBR();
             }
             break;
+            case RET_I: {
+                Reg dst = new Reg(true, 0);
+                Data src = (Data) inst.opd[0];
+                dataReg.write(dst, Data.copy(src));
+                if (!callStk.pop())
+                    return false;
+                instReg.proc = callStk.topPR();
+                instReg.inst = callStk.topIR();
+                dataReg.base = callStk.topBR();
+            }
+            break;
+            case RET_: {
+                if (!callStk.pop())
+                    return false;
+                instReg.proc = callStk.topPR();
+                instReg.inst = callStk.topIR();
+                dataReg.base = callStk.topBR();
+            }
+            break;
             case UMN_RR: {
                 Reg dst = (Reg) inst.opd[0];
                 Int src = (Int) dataReg.read((Reg) inst.opd[1]);
