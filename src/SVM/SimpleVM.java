@@ -53,21 +53,21 @@ public class SimpleVM  {
                 dataReg.write(dst, Data.copy(src));
             }
             break;
-            case GET_TABLE_RRI: {
+            case GETTABLE_RRI: {
                 Reg dst = (Reg) inst.opd[0];
                 Reg src = (Reg) inst.opd[1];
                 int idx = ((Int) inst.opd[2]).v;
                 dataReg.readTable(dst, src, idx);
             }
             break;
-            case GET_TABLE_RRR: {
+            case GETTABLE_RRR: {
                 Reg dst = (Reg) inst.opd[0];
                 Reg src = (Reg) inst.opd[1];
                 int idx = ((Int) dataReg.read((Reg) inst.opd[2])).v;
                 dataReg.readTable(dst, src, idx);
             }
             break;
-            case NEW_TABLE_RRI: {
+            case NEWTABLE_RRI: {
                 Reg dst = (Reg) inst.opd[0];
                 Reg src = (Reg) inst.opd[1];
                 int dim = ((Int) inst.opd[2]).v;
@@ -90,9 +90,13 @@ public class SimpleVM  {
                 String proc = ((Str) dataReg.read(src)).v;
                 switch (proc) {
                     case "print@bool":
+                        System.out.print(((Bool)dataReg.data[dataReg.base + src.v + 1]).v);
+                        break;
                     case "print@int":
+                        System.out.print(((Int)dataReg.data[dataReg.base + src.v + 1]).v);
+                        break;
                     case "print@str":
-                        System.out.println(dataReg.data[dataReg.base + src.v + 1]);
+                        System.out.print(((Str)dataReg.data[dataReg.base + src.v + 1]).v);
                         break;
                     case "concat@str@str": {
                         Str str1 = (Str) dataReg.data[dataReg.base + src.v + 1];
@@ -256,6 +260,286 @@ public class SimpleVM  {
                 dataReg.write(dst, Int.mul(src1, src2));
             }
             break;
+            case DIV_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.div(src1, src2));
+            }
+            break;
+            case DIV_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.div(src1, src2));
+            }
+            break;
+            case DIV_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.div(src1, src2));
+            }
+            break;
+            case DIV_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.div(src1, src2));
+            }
+            break;
+            case POW_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.pow(src1, src2));
+            }
+            break;
+            case POW_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.pow(src1, src2));
+            }
+            break;
+            case POW_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.pow(src1, src2));
+            }
+            break;
+            case POW_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.pow(src1, src2));
+            }
+            break;
+            case AND_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) dataReg.read((Reg) inst.opd[1]);
+                Bool src2 = (Bool) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Bool.and(src1, src2));
+            }
+            break;
+            case AND_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) dataReg.read((Reg) inst.opd[1]);
+                Bool src2 = (Bool) inst.opd[2];
+                dataReg.write(dst, Bool.and(src1, src2));
+            }
+            break;
+            case AND_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) inst.opd[1];
+                Bool src2 = (Bool) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Bool.and(src1, src2));
+            }
+            break;
+            case AND_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) inst.opd[1];
+                Bool src2 = (Bool) inst.opd[2];
+                dataReg.write(dst, Bool.and(src1, src2));
+            }
+            break;
+            case OR_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) dataReg.read((Reg) inst.opd[1]);
+                Bool src2 = (Bool) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Bool.or(src1, src2));
+            }
+            break;
+            case OR_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) dataReg.read((Reg) inst.opd[1]);
+                Bool src2 = (Bool) inst.opd[2];
+                dataReg.write(dst, Bool.or(src1, src2));
+            }
+            break;
+            case OR_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) inst.opd[1];
+                Bool src2 = (Bool) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Bool.or(src1, src2));
+            }
+            break;
+            case OR_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Bool src1 = (Bool) inst.opd[1];
+                Bool src2 = (Bool) inst.opd[2];
+                dataReg.write(dst, Bool.or(src1, src2));
+            }
+            break;
+            case EQ_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.eq(src1, src2));
+            }
+            break;
+            case EQ_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.eq(src1, src2));
+            }
+            break;
+            case EQ_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.eq(src1, src2));
+            }
+            break;
+            case EQ_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.eq(src1, src2));
+            }
+            break;
+            case NE_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.ne(src1, src2));
+            }
+            break;
+            case NE_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.ne(src1, src2));
+            }
+            break;
+            case NE_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.ne(src1, src2));
+            }
+            break;
+            case NE_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.ne(src1, src2));
+            }
+            break;
+            case LT_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.lt(src1, src2));
+            }
+            break;
+            case LT_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.lt(src1, src2));
+            }
+            break;
+            case LT_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.lt(src1, src2));
+            }
+            break;
+            case LT_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.lt(src1, src2));
+            }
+            break;
+            case LE_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.le(src1, src2));
+            }
+            break;
+            case LE_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.le(src1, src2));
+            }
+            break;
+            case LE_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.le(src1, src2));
+            }
+            break;
+            case LE_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.le(src1, src2));
+            }
+            break;
+            case GT_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.gt(src1, src2));
+            }
+            break;
+            case GT_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.gt(src1, src2));
+            }
+            break;
+            case GT_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.gt(src1, src2));
+            }
+            break;
+            case GT_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.gt(src1, src2));
+            }
+            break;
+            case GE_RRR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.ge(src1, src2));
+            }
+            break;
+            case GE_RRI: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) dataReg.read((Reg) inst.opd[1]);
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.ge(src1, src2));
+            }
+            break;
+            case GE_RIR: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) dataReg.read((Reg) inst.opd[2]);
+                dataReg.write(dst, Int.ge(src1, src2));
+            }
+            break;
+            case GE_RII: {
+                Reg dst = (Reg) inst.opd[0];
+                Int src1 = (Int) inst.opd[1];
+                Int src2 = (Int) inst.opd[2];
+                dataReg.write(dst, Int.ge(src1, src2));
+            }
+            break;
         }
         return true;
     }
@@ -264,7 +548,7 @@ public class SimpleVM  {
     loadProc(String[] inst, int idx, String name, String size) {
         Inst[] proc = new Inst[Integer.parseInt(size)];
         for (int i = 0; i < proc.length; i++)
-            proc[i] = Inst.valueOf(inst[idx + i].split("\\s+"));
+            proc[i] = Inst.valueOf(inst[idx + i].split(" (?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)"));
         vm.procMap.put(name, proc);
         return proc.length;
     }
@@ -273,7 +557,7 @@ public class SimpleVM  {
     loadInst(String[] inst) {
         List<Inst> main = new ArrayList<>();
         for (int i = 0; i < inst.length; i++) {
-            String[] token = inst[i].split("\\s+");
+            String[] token = inst[i].split(" (?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)");
             if (token[0].equals("PROC"))
                 i += loadProc(inst, i + 1, token[1], token[2]);
             else
@@ -284,7 +568,16 @@ public class SimpleVM  {
         Inst[] proc = main.toArray(new Inst[main.size()]);
         vm.procMap.put(null, proc);
         vm.instReg = new InstReg(proc);
-        while (vm.stepInst());
+        try {
+            while (vm.stepInst());
+        }
+        catch (SimpleException e) {
+            e.line = vm.instReg.inst;
+            throw e;
+        }
+        catch (Exception e) {
+            throw new SimpleException(e, ErrorCode.Unknown, vm.instReg.inst);
+        }
     }
 
     public static void

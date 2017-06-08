@@ -9,4 +9,5 @@ public enum ErrorCode {
     OutRegRange,
     OutProcRagne,
     StackOverflow,
+    Unknown
 }

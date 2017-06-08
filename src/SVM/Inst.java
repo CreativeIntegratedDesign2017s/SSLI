@@ -19,8 +19,8 @@ enum Code {
     GE_RRR, GE_RRI, GE_RIR, GE_RII,
     JMP_I, RET_R, RET_I, RET_,
     TEST_RI, CALL_RI,
-    GET_TABLE_RRR, GET_TABLE_RRI,
-    NEW_TABLE_RRI,
+    GETTABLE_RRR, GETTABLE_RRI,
+    NEWTABLE_RRI,
 }
 
 class Reg {
