@@ -2,7 +2,7 @@ package SimpleVM;
 
 enum Code {
     NOP_,
-    MOVE_RR, MOVE_RI, LOAD_RR, LOAD_RI,
+    MOVE_RR, MOVE_RI, LOAD_RR, LOAD_RI, COPY_RR,
     UMN_RR, UMN_RI, NOT_RR, NOT_RI,
     ADD_RRR, ADD_RRI, ADD_RIR, ADD_RII,
     SUB_RRR, SUB_RRI, SUB_RIR, SUB_RII,
@@ -48,8 +48,7 @@ class Inst {
 
     Inst(Code c, Object[] d) { code = c; opd = d; }
 
-    static Inst valueOf(String str) {
-        String[] token = str.split("\\s+");
+    static Inst valueOf(String[] token) {
         StringBuilder codeStr = new StringBuilder(token[0]).append("_");
         Object[] opd = new Object[token.length - 1];
         for (int i = 0; i < opd.length; i++) {

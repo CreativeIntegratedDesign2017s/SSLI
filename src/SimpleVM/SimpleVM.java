@@ -1,11 +1,10 @@
 package SimpleVM;
 import java.util.*;
-import java.util.function.*;
 
 /* Singleton Class */
 public class SimpleVM  {
     static final int size = 256;
-    private static SimpleVM vm;
+    private static SimpleVM vm = new SimpleVM();
 
     private DataReg dataReg;
     private InstReg instReg;
@@ -14,20 +13,20 @@ public class SimpleVM  {
 
     private SimpleVM() {
         dataReg = new DataReg();
-        instReg = new InstReg();
         callStk = new CallStack();
         procMap = new HashMap<>();
     }
 
     private boolean stepInst() {
         Inst inst = instReg.getInst();
+
         switch (inst.code) {
             case NOP_:
                 break;
             case MOVE_RR: {
                 Reg dst = (Reg) inst.opd[0];
-                Reg src = (Reg) inst.opd[1];
-                dataReg.write(dst, Data.copy(dataReg.read(src)));
+                Data src = dataReg.read((Reg) inst.opd[1]);
+                Data.vchg(dataReg.read(dst), src);
             }
             break;
             case MOVE_RI: {
@@ -45,6 +44,12 @@ public class SimpleVM  {
             case LOAD_RI: {
                 Reg dst = (Reg) inst.opd[0];
                 Data src = (Data) inst.opd[1];
+                dataReg.write(dst, Data.copy(src));
+            }
+            break;
+            case COPY_RR: {
+                Reg dst = (Reg) inst.opd[0];
+                Data src = dataReg.read((Reg) inst.opd[1]);
                 dataReg.write(dst, Data.copy(src));
             }
             break;
@@ -255,67 +260,32 @@ public class SimpleVM  {
         return true;
     }
 
-    public static void
-    init() {
-        vm = new SimpleVM();
-
-        List<String> inst = new LinkedList<>();
-        inst.add("LOAD 2 $3");
-        inst.add("LOAD 3 $3");
-        inst.add("NEW_TABLE 1 2 $2");
-        inst.add("GET_TABLE 5 1 $1");
-        inst.add("GET_TABLE 6 5 $2");
-        inst.add("MOVE 6 $7");
-        inst.add("LOAD 0 $\"print\"");
-        inst.add("CALL 0 $1");
-        inst.add("RET 0");
-
-        loadInst(null, inst);
-        execInst();
+    private static int
+    loadProc(String[] inst, int idx, String name, String size) {
+        Inst[] proc = new Inst[Integer.parseInt(size)];
+        for (int i = 0; i < proc.length; i++)
+            proc[i] = Inst.valueOf(inst[idx + i].split("\\s+"));
+        vm.procMap.put(name, proc);
+        return proc.length;
     }
 
-    /*
-    SimpleVM(String fileName) throws IOException {
-        super();
-        File IRCodeFile = new File(fileName);
-        FileReader fileReader = new FileReader(IRCodeFile);
-        BufferedReader bufferedReader = new BufferedReader(fileReader);
-        String line;
-        List<String> insts = new ArrayList<>();
-        String procName = null;         // null for main method
-
-        // Constructs a ProcMap
-        while ((line = bufferedReader.readLine()) != null) {
-            String inst = line;
-            if(inst.split(" ")[0] == "PROC") {
-                loadInst(procName, insts);
-                insts = new ArrayList<>();
-                procName = inst.split(" ")[1].split("@")[0];
-            }
-            else {
-                insts.add(inst);
-            }
+    public static void
+    loadInst(String[] inst) {
+        List<Inst> main = new ArrayList<>();
+        for (int i = 0; i < inst.length; i++) {
+            String[] token = inst[i].split("\\s+");
+            if (token[0].equals("PROC"))
+                i += loadProc(inst, i + 1, token[1], token[2]);
+            else
+                main.add(Inst.valueOf(token));
         }
-        loadInst(procName, insts);
-        fileReader.close();
-        // End of ProcMap construction
+        main.add(Inst.valueOf(new String[]{"RET"}));
 
-        instReg = new InstReg(procMap.get(null));
-        run();
+        Inst[] proc = main.toArray(new Inst[main.size()]);
+        vm.procMap.put(null, proc);
+        vm.instReg = new InstReg(proc);
+        while (vm.stepInst());
     }
-    */
-
-    public static void
-    loadInst(String proc, List<String> ir) {
-        Inst[] inst = ir.stream()
-                .map(Inst::valueOf)
-                .toArray((IntFunction<Inst[]>) Inst[]::new);
-        vm.procMap.put(proc, inst);
-        vm.instReg.proc = inst;
-    }
-
-    public static void
-    execInst() { while (vm.stepInst()); }
 
     public static void
     printReg(String str) { System.out.println(vm.dataReg.read(Reg.valueOf(str))); }

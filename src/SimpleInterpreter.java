@@ -92,8 +92,6 @@ public class SimpleInterpreter {
 
         SymbolTable symTable = new SymbolTable();
 
-        SimpleVM.init();
-
         InterpretProgramViaStream(cr, symTable, config);
     }
 
