@@ -1,4 +1,6 @@
 import java.io.*;
+import java.util.stream.Collectors;
+
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.apache.commons.cli.*;
@@ -177,14 +179,18 @@ public class SimpleInterpreter {
             IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
             IRCA prgmChunk = irBuilder.visit(prgm);
             System.out.println("----IR CODE GENERATION----");
-            for (IRStatement stmt : prgmChunk.chunk.statements) {
-                System.out.println(stmt.toString());
+            String[] irCodes = prgmChunk.chunk.statements.stream().map(Object::toString).toArray(String[]::new);
+            if (config.outOpt) {
+                OutputStream fs = new FileOutputStream(config.outFile);
+                fs.write(String.join("\n", irCodes).getBytes());
+            }
+            for (String stmt : irCodes) {
+                System.out.println(stmt);
             }
             globalIndex = irBuilder.top;
 
             totalLines += code.split("\r\n|\r|\n", -1).length - 1;
 
-            // TODO: Make AST & IR Codes
             System.out.println("Tree: " + tree.toStringTree(parser));
 
             // TODO: Execute the Code
