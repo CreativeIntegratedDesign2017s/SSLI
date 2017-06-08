@@ -184,7 +184,7 @@ public class IRBuilder extends ASTListener<IRCA> {
         {
             top = target;
             return aggregateResult(irca,
-                    new IRCA(new IRChunk(new IRStatement(ref ? "LOAD" : "MOVE", target, irca.argument)), top));
+                    new IRCA(new IRChunk(new IRStatement(ref ? "LOAD" : "COPY", target, irca.argument)), top));
         }
     }
 
