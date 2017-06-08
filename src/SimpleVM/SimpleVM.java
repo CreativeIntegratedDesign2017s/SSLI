@@ -84,7 +84,9 @@ public class SimpleVM  {
                 Reg src = (Reg) inst.opd[0];
                 String proc = ((Str) dataReg.read(src)).v;
                 switch (proc) {
-                    case "print":
+                    case "print@bool":
+                    case "print@int":
+                    case "print@str":
                         System.out.println(dataReg.data[dataReg.base + src.v + 1]);
                         break;
                     case "concat@str@str": {
