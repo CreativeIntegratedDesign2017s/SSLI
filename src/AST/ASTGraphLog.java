@@ -1,10 +1,13 @@
+package AST;
+
 import java.io.*;
+import ANTLR.*;
 
 public class ASTGraphLog extends ASTListener<Object> {
     private BufferedWriter bw;
     private int numNode;
 
-    ASTGraphLog() throws IOException {
+    public ASTGraphLog() throws IOException {
         bw = new BufferedWriter(new FileWriter("ASTGraph.log"));
     }
 

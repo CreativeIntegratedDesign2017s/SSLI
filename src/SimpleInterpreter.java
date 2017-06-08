@@ -1,8 +1,11 @@
 import java.io.*;
+
+import ANTLR.*;
+import AST.*;
+import SVM.*;
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.apache.commons.cli.*;
-import SimpleVM.*;
 
 public class SimpleInterpreter {
     static int totalLines = 0;

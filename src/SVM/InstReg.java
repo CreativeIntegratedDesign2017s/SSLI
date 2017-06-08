@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 class InstReg {
     Inst[] proc;

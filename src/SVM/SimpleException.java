@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 public class SimpleException extends RuntimeException {
     public ErrorCode code;

@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 import java.util.*;
 
 /* Singleton Class */

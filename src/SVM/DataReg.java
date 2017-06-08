@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 class DataReg {
     Data[] data = new Data[SimpleVM.size];

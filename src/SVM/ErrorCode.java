@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 public enum ErrorCode {
     DivideZero,

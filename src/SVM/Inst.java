@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 enum Code {
     NOP_,
