@@ -192,11 +192,6 @@ public class IRBuilder extends ASTListener<IRCA> {
     public IRCA visitProcUnit(ASTProcUnit ctx) {
         Function fDecl = symTable.getFunction(ctx);
         String funcName = ctx.pid.getText() + fDecl.getDecorator();
-        IRCA functionBegin = new IRCA(new IRChunk() {{
-            statements = new ArrayList<IRStatement>() {{
-                add(new IRStatement("PROC", new RawArg(funcName)));
-            }};
-        }});
 
         StackIndex prevTop = top;
         top = new StackIndex(0, false);
@@ -220,18 +215,16 @@ public class IRBuilder extends ASTListener<IRCA> {
 
         IRCA blockChunk = ctx.stmtList.visit(this);
         int maxLine = blockChunk.chunk.statements.size();
-        for (int i = 0; i < maxLine; ++i) {
-            IRStatement stmt = blockChunk.chunk.statements.get(i);
-            if (stmt.command.equals("TEMP_RET")) {
-                if (i < maxLine - 1)
-                    blockChunk.chunk.statements.set(i, new IRStatement("JMP", new Constant(maxLine - i - 1)));
-                else
-                    // 마지막 줄이라 하더라도 줄을 지우면 그 위에서 명령줄의 수를 이용해서 작성해놓은 로직이 무너질 수 있음.
-                    blockChunk.chunk.statements.set(i, new IRStatement("NOP"));
-            }
-        }
 
         top = prevTop;
+
+        IRCA functionBegin = new IRCA(new IRChunk() {{
+            statements = new ArrayList<IRStatement>() {{
+                add(new IRStatement("PROC",
+                        new RawArg(funcName),
+                        new RawArg(String.valueOf(blockChunk.chunk.statements.size() + 1))));
+            }};
+        }});
 
         return aggregateResult(functionBegin, blockChunk, new IRCA(new IRChunk(retStmt)));
     }
@@ -356,15 +349,14 @@ public class IRBuilder extends ASTListener<IRCA> {
 
     @Override public IRCA visitReturn(ASTReturn ctx) {
         IRCA retExprChunk = null;
-        if (ctx.val != null)
-        {
+        if (ctx.val != null) {
             retExprChunk = visit(ctx.val);
-            if (!retExprChunk.argument.equals(returnIndex)) {
-                retExprChunk = aggregateResult(retExprChunk,
-                        new IRCA(new IRChunk(new IRStatement("MOVE", returnIndex, retExprChunk.argument))));
-            }
         }
-        return aggregateResult(retExprChunk, new IRCA(new IRChunk(new IRStatement("TEMP_RET"))));
+        if (retExprChunk != null)
+            return aggregateResult(retExprChunk,
+                    new IRCA(new IRChunk(new IRStatement("RET", retExprChunk.argument))));
+        else
+            return new IRCA(new IRChunk(new IRStatement("RET")));
     }
 
     @Override public IRCA visitSubstring(ASTSubstring ctx) {

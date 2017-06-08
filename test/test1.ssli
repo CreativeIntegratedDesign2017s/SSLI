@@ -1,31 +1,6 @@
-// swap()
-void swap(int& a, int& b) {
-    int t = a;
-    a = b;
-    b = t;
+int a = 1;
+int add(int a, int b) {
+    a = a + b;
+    return a;
 }
-
-void swap(str& a, str& b) {
-    str t = a;
-    a = b;
-    b = t;
-}
-
-void test()
-{
-    //swap(1, 2);
-}
-
-// main()
-int a = 7;
-int b = 6 + 3;
-
-print("Before swap");
-print(a);
-print(b);
-
-swap(a, b);
-
-print("After swap");
-print(a);
-print(b);
+int b = add(a, a);
