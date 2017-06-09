@@ -1,3 +1,6 @@
+import ANTLR.SimpleParser;
+import AST.*;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -283,7 +286,7 @@ class TypeChecker extends ASTListener<Expression> {
     public Expression visitConstant(ASTConstant ctx){
         String primitiveName;
         switch(ctx.type) {
-            case Bool:
+            case Boolean:
                 primitiveName = "bool";
                 break;
             case Integer:

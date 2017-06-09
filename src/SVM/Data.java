@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 enum DataType { Bool, Int, Str, Arr }
 
@@ -7,7 +7,7 @@ class Data {
 
     static Data valueOf(String str) {
         char c = str.charAt(1);
-        if (Character.isDigit(c))
+        if (Character.isDigit(c) || c == '-')
             return new Int(Integer.parseInt(str.substring(1)));
         if (c == '"' && str.charAt(str.length() - 1) == '"')
             return new Str(str.substring(2, str.length() - 1));

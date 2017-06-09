@@ -1,22 +1,27 @@
+import ANTLR.*;
+import AST.*;
+import SVM.*;
 import java.io.*;
 import java.util.stream.Collectors;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
 import org.apache.commons.cli.*;
-import SimpleVM.*;
 
 public class SimpleInterpreter {
-    static int totalLines = 0;
-    static StackIndex globalIndex = new StackIndex(0, true);
+    static private int totalLines;
+    static private ModeConfig config;
+    static private CodeReader reader;
+    static private SymbolTable symTable;
+    static private StackIndex globalIndex;
 
-    static class ModeConfiguration {
+    static class ModeConfig {
         boolean inOpt;
         boolean outOpt;
         String inFile;
         String outFile;
 
-        ModeConfiguration(String args[]) {
+        ModeConfig(String args[]) {
             Options options = new Options();
             options.addOption(new Option("f", true, "input file"));
             options.addOption(new Option("o", true, "output file"));
@@ -88,114 +93,93 @@ public class SimpleInterpreter {
 
     /* Main */
     static public void main(String args[]) throws IOException {
-        ModeConfiguration config = new ModeConfiguration(args);
+        config = new ModeConfig(args);
         InputStream is = (config.inOpt) ? (new FileInputStream(config.inFile)) : (System.in);
-        CodeReader cr = new CodeReader(is);
 
-        SymbolTable symTable = new SymbolTable();
+        reader = new CodeReader(is);
+        symTable = new SymbolTable();
+        globalIndex = new StackIndex(0, true);
 
-        InterpretProgramViaStream(cr, symTable, config);
+        InterpretProgramViaStream();
     }
 
     /* Core Loop */
-    static private void InterpretProgramViaStream(CodeReader reader, SymbolTable symTable, ModeConfiguration config) throws IOException {
+    static private void InterpretProgramViaStream() throws IOException {
         do {
-            String code = reader.readCode();
-
             // Build Lexer & Parser
-            ANTLRInputStream input = new ANTLRInputStream(code);
-            SimpleLexer lexer = new SimpleLexer(input);
-            CommonTokenStream tokens = new CommonTokenStream(lexer);
-            SimpleParser parser = new SimpleParser(tokens);
+            String code = reader.readCode();
+            SimpleLexer lexer = new SimpleLexer(new ANTLRInputStream(code));
+            SimpleParser parser = new SimpleParser(new CommonTokenStream(lexer));
 
-            // Set Simple Error Listener
+            // Set Error Listener
             parser.removeErrorListeners();
             parser.addErrorListener(new ErrorListener());
 
             // Build Parse Tree
-            ParseTree tree = null;
+            ParseTree tree;
             try {
                 tree = parser.prgm();
             } catch (RuntimeException e) {
-                symTable.clear();
-                if (reader.ready()) {
-                    continue;
-                }
-                if (config.inOpt) {
-                    System.err.println(e.getMessage());
-                    System.exit(-1);
-                } else {
-                    System.out.println(e.getMessage());
-                    continue;
-                }
+                if (reader.ready()) continue;
+                System.err.println(e.getMessage());
+                reader.flushBuffer();
+                if (config.inOpt) break;
+                else continue;
             }
 
             // Build AST
             ASTBuilder ab = new ASTBuilder();
-            ASTPrgm prgm = (ASTPrgm) ab.visit(tree);
+            ASTGraphLog gv = new ASTGraphLog("ASTGraph.log");
+            ASTNode prgm = ab.visit(tree);
+            gv.visit(prgm);
 
-            ASTGraphLog gv = new ASTGraphLog();
-            gv.visitPrgm(prgm);
-
-            // Scope Validation
-            ScopeChecker scopeChecker = new ScopeChecker(symTable);
+            // Scope Validity & Type Consistency
             try {
-                prgm.visit(scopeChecker);
+                prgm.visit(new ScopeChecker(symTable));
+                prgm.visit(new TypeChecker(symTable));
+                symTable.commit();
+                reader.flushBuffer();
             } catch (RuleException e) {
                 symTable.clear();
-                if (config.inOpt) {
-                    System.err.println(
-                            String.format("%s ...line %d: %s", e.errorData, e.localLine + totalLines, e.getMessage()));
-                    System.exit(-1);
-                } else {
-                    System.err.println(e.getMessage());
-                    reader.flushBuffer();
-                    continue;
-                }
+                System.err.printf("%s ...line %d: %s\n",
+                        e.errorData, e.localLine + totalLines,
+                        e.getMessage());
+                reader.flushBuffer();
+                if (config.inOpt) break;
+                else continue;
             }
 
-            // Check Type Consistency
-            TypeChecker typeChecker = new TypeChecker(symTable);
-            try {
-                prgm.visit(typeChecker);
-            } catch (RuleException e) {
-                symTable.clear();
-                if (config.inOpt) {
-                    System.err.println(
-                            String.format("%s ...line %d: %s", e.errorData, e.localLine + totalLines, e.getMessage()));
-                    System.exit(-1);
-                } else {
-                    System.err.println(e.getMessage());
-                    reader.flushBuffer();
-                    continue;
-                }
-            }
-
-            // Declarations Confirmed
-            symTable.commit();
-            symTable.print();
+            totalLines += code.split("\n").length - 1;
 
             // IR Code Generation
             IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
             IRCA prgmChunk = irBuilder.visit(prgm);
-            System.out.println("----IR CODE GENERATION----");
-            String[] irCodes = prgmChunk.chunk.statements.stream().map(Object::toString).toArray(String[]::new);
-            if (config.outOpt) {
-                OutputStream fs = new FileOutputStream(config.outFile);
-                fs.write(String.join("\n", irCodes).getBytes());
-            }
-            for (String stmt : irCodes) {
-                System.out.println(stmt);
-            }
             globalIndex = irBuilder.top;
 
-            totalLines += code.split("\r\n|\r|\n", -1).length - 1;
+            String[] irCodes = prgmChunk.chunk.statements.stream()
+                    .map(IRStatement::toString)
+                    .toArray(String[]::new);
+            if (config.inOpt && config.outOpt) {
+                OutputStream fs = new FileOutputStream(config.outFile);
+                fs.write(String.join("\n", irCodes).getBytes());
+                fs.close();
+            }
+            else {
+                BufferedWriter bw = new BufferedWriter(new FileWriter("IRCode.log"));
+                bw.write(String.join("\n", irCodes));
+                bw.close();
 
-            System.out.println("Tree: " + tree.toStringTree(parser));
-
-            // TODO: Execute the Code
-            reader.flushBuffer();
+                try {
+                    SimpleVM.loadInst(irCodes);
+                } catch (SimpleException e) {
+                    System.err.printf("Proc %s, Line %d, Code: %s\n",
+                            (e.proc == null) ? "" : e.proc,
+                            e.line,
+                            e.code);
+                    System.err.println(e.getMessage());
+                    return;
+                }
+            }
         } while (reader.ready());
     }
-
 }

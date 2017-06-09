@@ -1,4 +1,6 @@
-import java.util.ArrayList;
+package AST;
+
+import java.util.*;
 
 public class ASTListener<T> {
     public T visitConstant(ASTConstant node)	{ return visitChildren(node); }
@@ -24,13 +26,13 @@ public class ASTListener<T> {
     public T visitProcUnit(ASTProcUnit node)	{ return visitChildren(node); }
     public T visitPrgm(ASTPrgm prgm)			{ return visitChildren(prgm); }
 
-    T aggregateResult(T aggregate, T nextResult) {
+    public T aggregateResult(T aggregate, T nextResult) {
         return nextResult;
     }
     public T visit(ASTNode n) {
         return n.visit(this);
     }
-    T visitChildren(ASTNode n) {
+    public T visitChildren(ASTNode n) {
         ArrayList<T> aggregate = new ArrayList<T>(){{
            add(null);
         }};

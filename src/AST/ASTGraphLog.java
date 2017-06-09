@@ -1,11 +1,14 @@
+package AST;
+
 import java.io.*;
+import ANTLR.*;
 
 public class ASTGraphLog extends ASTListener<Object> {
     private BufferedWriter bw;
     private int numNode;
 
-    ASTGraphLog() throws IOException {
-        bw = new BufferedWriter(new FileWriter("ASTGraph.log"));
+    public ASTGraphLog(String filename) throws IOException {
+        bw = new BufferedWriter(new FileWriter(filename));
     }
 
     public Object visitConstant(ASTConstant node)	{
@@ -19,7 +22,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             else
                 bw.write("\t" + String.valueOf(curNode) + " [shape=record, label=\"" + node.token.getText() + "\"]\n");
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitVariable(ASTVariable node)	{
@@ -27,7 +30,7 @@ public class ASTGraphLog extends ASTListener<Object> {
         try {
             bw.write("\t" + String.valueOf(curNode) + " [shape=record, label=\"" + node.token.getText() + "\"]\n");
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitUnary(ASTUnary node)			{
@@ -37,7 +40,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
             node.oprnd.visit(this);
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitBinary(ASTBinary node)		{
@@ -49,7 +52,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
             node.oprnd2.visit(this);
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitSubscript(ASTSubscript node)	{
@@ -61,7 +64,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
             node.index.visit(this);
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitSubstring(ASTSubstring node)	{
@@ -75,7 +78,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
             node.index2.visit(this);
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitProcCall(ASTProcCall node)	{
@@ -87,7 +90,7 @@ public class ASTGraphLog extends ASTListener<Object> {
                 argu.visit(this);
             }
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
 
@@ -98,7 +101,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
             node.expr.visit(this);
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitDecl(ASTDecl node) {
@@ -119,7 +122,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             else
                 bw.write("\t" + String.valueOf(numNode++) + " [shape=record, label=\"default\"]\n");
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
     public Object visitAsgn(ASTAsgn node)			{
@@ -131,7 +134,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             bw.write("\t" + String.valueOf(curNode) + "--" + String.valueOf(numNode) + "\n");
             node.rval.visit(this);
         }
-        catch (Exception e) { System.err.println(e); }
+        catch (Exception e) { System.err.println(e.getMessage()); }
         return null;
     }
 
@@ -148,7 +151,7 @@ public class ASTGraphLog extends ASTListener<Object> {
             bw.write("}\n");
             bw.close();
         }
-        catch (IOException e) { System.err.println(e); }
+        catch (IOException e) { System.err.println(e.getMessage()); }
         return null;
     }
 }
