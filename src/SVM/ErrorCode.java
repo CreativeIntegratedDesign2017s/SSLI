@@ -9,5 +9,6 @@ public enum ErrorCode {
     OutRegRange,
     OutProcRagne,
     StackOverflow,
+    InvalidIR,
     Unknown
 }

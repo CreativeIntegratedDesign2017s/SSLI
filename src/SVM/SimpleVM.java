@@ -53,6 +53,12 @@ public class SimpleVM  {
                 dataReg.write(dst, Data.copy(src));
             }
             break;
+            case COPY_RI: {
+                Reg dst = (Reg) inst.opd[0];
+                Data src = (Data) inst.opd[1];
+                dataReg.write(dst, Data.copy(src));
+            }
+            break;
             case GETTABLE_RRI: {
                 Reg dst = (Reg) inst.opd[0];
                 Reg src = (Reg) inst.opd[1];

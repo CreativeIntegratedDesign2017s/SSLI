@@ -18,7 +18,6 @@ public class SimpleInterpreter {
     static class ModeConfig {
         boolean inOpt;
         boolean outOpt;
-        boolean logOpt;
         String inFile;
         String outFile;
 
@@ -26,7 +25,6 @@ public class SimpleInterpreter {
             Options options = new Options();
             options.addOption(new Option("f", true, "input file"));
             options.addOption(new Option("o", true, "output file"));
-            options.addOption(new Option("l", false, "write log or not"));
             try {
                 CommandLineParser parser = new DefaultParser();
                 CommandLine cmd = parser.parse(options, args);
@@ -34,7 +32,6 @@ public class SimpleInterpreter {
                 inFile = cmd.getOptionValue("f");
                 outOpt = cmd.hasOption("o");
                 outFile = cmd.getOptionValue("o");
-                logOpt = cmd.hasOption("l");
             }
             catch (ParseException e) {
                 System.err.println(e.getMessage());
@@ -126,14 +123,14 @@ public class SimpleInterpreter {
                 if (reader.ready()) continue;
                 System.err.println(e.getMessage());
                 reader.flushBuffer();
-                if (config.inOpt) return;
+                if (config.inOpt) break;
                 else continue;
             }
 
             // Build AST
             ASTBuilder ab = new ASTBuilder();
             ASTNode prgm = ab.visit(tree);
-            if (config.logOpt) prgm.visit(new ASTGraphLog());
+            prgm.visit(new ASTGraphLog("ASTGraph.log"));
 
             // Scope Validity & Type Consistency
             try {
@@ -147,7 +144,7 @@ public class SimpleInterpreter {
                         e.errorData, e.localLine + totalLines,
                         e.getMessage());
                 reader.flushBuffer();
-                if (config.inOpt) return;
+                if (config.inOpt) break;
                 else continue;
             }
 
@@ -156,32 +153,28 @@ public class SimpleInterpreter {
             // IR Code Generation
             IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
             IRCA prgmChunk = irBuilder.visit(prgm);
-
-            System.out.println("----IR CODE GENERATION----");
-            String[] irCodes = prgmChunk.chunk.statements.stream().map(Object::toString).toArray(String[]::new);
-            if (config.outOpt) {
-                OutputStream fs = new FileOutputStream(config.outFile);
-                fs.write(String.join("\n", irCodes).getBytes());
-            }
-            for (String stmt : irCodes) {
-                System.out.println(stmt);
-            }
             globalIndex = irBuilder.top;
 
-            totalLines += code.split("\r\n|\r|\n", -1).length - 1;
-
-            System.out.println("Tree: " + tree.toStringTree(parser));
-
-            // Execution on VM
-            String[] inst = prgmChunk.chunk.statements.stream()
+            String[] irCodes = prgmChunk.chunk.statements.stream()
                     .map(IRStatement::toString)
                     .toArray(String[]::new);
-            try {
-                SimpleVM.loadInst(inst);
-            } catch (SimpleException e) {
-                System.err.printf("Line %d, Code: %s\n", e.line, e.code);
-                System.err.println(e.getMessage());
-                return;
+            if (config.inOpt && config.outOpt) {
+                OutputStream fs = new FileOutputStream(config.outFile);
+                fs.write(String.join("\n", irCodes).getBytes());
+                fs.close();
+            }
+            else {
+                BufferedWriter bw = new BufferedWriter(new FileWriter("IRCode.log"));
+                bw.write(String.join("\n", irCodes));
+                bw.close();
+
+                try {
+                    SimpleVM.loadInst(irCodes);
+                } catch (SimpleException e) {
+                    System.err.printf("Line %d, Code: %s\n", e.line, e.code);
+                    System.err.println(e.getMessage());
+                    return;
+                }
             }
         } while (reader.ready());
     }

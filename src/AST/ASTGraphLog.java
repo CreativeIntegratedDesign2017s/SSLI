@@ -7,8 +7,8 @@ public class ASTGraphLog extends ASTListener<Object> {
     private BufferedWriter bw;
     private int numNode;
 
-    public ASTGraphLog() throws IOException {
-        bw = new BufferedWriter(new FileWriter("ASTGraph.log"));
+    public ASTGraphLog(String filename) throws IOException {
+        bw = new BufferedWriter(new FileWriter(filename));
     }
 
     public Object visitConstant(ASTConstant node)	{
