@@ -83,8 +83,8 @@ class IRStatement {
     String command;
     IRArgument[] arguments;
     IRStatement(String command, IRArgument ... arguments) {
-        this.command = command;
         this.arguments = arguments;
+        this.command = command;
     }
     @Override
     public String toString() {
@@ -289,7 +289,6 @@ public class IRBuilder extends ASTListener<IRCA> {
         else if (shape.size() == 0)
             initializeChunk = new IRCA(new IRChunk(
                     new IRStatement("LOAD", target, new Constant(vs.type.getDefaultValue()))));
-        top = target;
 
         return aggregateResult(stackInitializer, initializeChunk);
     }
@@ -329,9 +328,7 @@ public class IRBuilder extends ASTListener<IRCA> {
     public IRCA visitCond(ASTCond ctx) {
         StackIndex prevTop = top;
         IRCA elsePart = ctx.elseStmtList != null ? ctx.elseStmtList.visit(this) : null;
-        top = prevTop;
         IRCA ifPart = ctx.thenStmtList.visit(this);
-        top = prevTop;
 
         elsePart = aggregateResult(elsePart, new IRCA(
                 new IRChunk(new IRStatement("JMP", new Constant(ifPart.chunk.size())))));
@@ -339,32 +336,27 @@ public class IRBuilder extends ASTListener<IRCA> {
         IRCA condIrca = ctx.cond.visit(this);
         IRCA testChunk = new IRCA(
                 new IRChunk(new IRStatement("TEST", condIrca.argument, new Constant(elsePart.chunk.size()))));
-        top = prevTop;
         return aggregateResult(condIrca, testChunk, elsePart, ifPart);
     }
 
     @Override public IRCA visitUntil(ASTUntil ctx) {
         StackIndex prevTop = top;
         IRCA stmtChunk = visit(ctx.loop);
-        top = prevTop;
         IRCA condIrca = visit(ctx.cond);
 
         IRCA testChunk = new IRCA(new IRChunk(
                 new IRStatement("TEST", condIrca.argument, new Constant(-(stmtChunk.chunk.size() + condIrca.chunk.size() + 1)))));
-        top = prevTop;
         return aggregateResult(stmtChunk, condIrca, testChunk);
     }
 
     @Override public IRCA visitWhile(ASTWhile ctx) {
         StackIndex prevTop = top;
         IRCA stmtChunk = visit(ctx.loop);
-        top = prevTop;
         IRCA condIrca = visit(ctx.cond);
 
         IRCA testChunk = new IRCA(new IRChunk(
                 new IRStatement("TEST", condIrca.argument,
                         new Constant(-(stmtChunk.chunk.size() + condIrca.chunk.size() + 1)))));
-        top = prevTop;
         return aggregateResult(new IRCA(new IRChunk(new IRStatement("JMP", new Constant(stmtChunk.chunk.size())))),
                 stmtChunk, condIrca, testChunk);
     }
@@ -391,16 +383,14 @@ public class IRBuilder extends ASTListener<IRCA> {
         IRCA fromChunk = visitWithIncIndex(ctx.index1, false);
         IRCA toChunk = visitWithIncIndex(ctx.index2, false);
         IRCA callChunk = new IRCA(new IRChunk(new IRStatement("CALL", prevTop, new Constant(3))), prevTop);
-        top = prevTop;
         return aggregateResult(funcChunk, containerChunk, fromChunk, toChunk, callChunk);
     }
 
     @Override public IRCA visitSubscript(ASTSubscript ctx) {
-        StackIndex target = top.offset(1);
+        StackIndex target = incIndex(1);
         IRCA arrChunk = visit(ctx.arr);
         IRCA indexChunk = visit(ctx.index);
 
-        top = target;
         IRCA opChunk = new IRCA(new IRChunk(
                 new IRStatement("GETTABLE", target, arrChunk.argument, indexChunk.argument)), target);
         return aggregateResult(arrChunk, indexChunk, opChunk);
@@ -408,12 +398,11 @@ public class IRBuilder extends ASTListener<IRCA> {
 
     @Override
     public IRCA visitUnary(ASTUnary ctx) {
-        StackIndex target = top.offset(1);
+        StackIndex target = incIndex(1);
         IRCA oprandChunk = visit(ctx.oprnd);
         if (ctx.op.getType() == SimpleParser.ADD)
             return oprandChunk;
 
-        top = target;
         if (ctx.op.getType() == SimpleParser.SUB) {
             IRCA opChunk = new IRCA(new IRChunk(new IRStatement("UMN", target, oprandChunk.argument)), target);
             return aggregateResult(oprandChunk, opChunk);
@@ -463,7 +452,7 @@ public class IRBuilder extends ASTListener<IRCA> {
 
     @Override
     public IRCA visitBinary(ASTBinary ctx) {
-        StackIndex target = top.offset(1);
+        StackIndex target = incIndex(1);
         IRCA oprnd1Chunk = visit(ctx.oprnd1);
         IRCA oprnd2Chunk = visit(ctx.oprnd2);
         IRCA opChunk = new IRCA(
@@ -476,7 +465,6 @@ public class IRBuilder extends ASTListener<IRCA> {
                 ),
                 target
         );
-        top = target;
 
         return aggregateResult(oprnd1Chunk, oprnd2Chunk, opChunk);
     }
@@ -494,7 +482,6 @@ public class IRBuilder extends ASTListener<IRCA> {
         IRCA parameterChunk = aggregateResult(exprs.toArray(new IRCA[exprs.size()]));
         IRCA callChunk = new IRCA(new IRChunk(
                 new IRStatement("CALL", target, new Constant(top.index - target.index))), target);
-        top = target;
         return aggregateResult(funcChunk, parameterChunk, callChunk);
     }
 }

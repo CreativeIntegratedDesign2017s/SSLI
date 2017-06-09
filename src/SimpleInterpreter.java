@@ -116,6 +116,9 @@ public class SimpleInterpreter {
 
             // IR Code Generation
             IRCA prgmChunk = irBuilder.visit(prgm);
+            IROptimizer optimizer = new IROptimizer(prgmChunk.chunk.statements.toArray(new IRStatement[prgmChunk.chunk.statements.size()]));
+            optimizer.doOptimize();
+
             String[] irCodes = prgmChunk.chunk.statements.stream()
                     .map(IRStatement::toString)
                     .toArray(String[]::new);
