@@ -59,7 +59,7 @@ class Alias extends SingleType {
 }
 
 class Array extends ValueType {
-    private SingleType base;
+    SingleType base;
     private List<Integer> shape;
 
     Array (SingleType base, List<Integer> shape) {

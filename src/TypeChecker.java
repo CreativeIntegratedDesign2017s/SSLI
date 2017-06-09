@@ -171,6 +171,14 @@ class TypeChecker extends ASTListener<Expression> {
     public Expression visitDecl(ASTDecl ctx) {
         SymbolTable.VarSymbol v = (SymbolTable.VarSymbol) symTable.getSymbol(ctx);
 
+        if (v.type instanceof Array) {
+            Array at = (Array) v.type;
+            if (at.base.getTypeName() != "int") {
+                throw new RuleException(ctx,
+                        String.format("Static Array Declaration only supports 'int' type"));
+            }
+        }
+
         if (ctx.init != null) {
             ValueExpression initExpr = (ValueExpression) ctx.init.visit(this);
             if (!v.type.equals(initExpr.getBase())) {
