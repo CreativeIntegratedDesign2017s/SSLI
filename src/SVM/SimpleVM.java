@@ -582,6 +582,7 @@ public class SimpleVM  {
             while (vm.stepInst());
         }
         catch (SimpleException e) {
+            e.proc = vm.instReg.name;
             e.line = vm.instReg.inst;
             throw e;
         }
