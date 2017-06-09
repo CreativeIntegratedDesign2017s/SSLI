@@ -10,6 +10,8 @@
 
 * IntelliJ IDEA로 'git clone [...]'을 통해 받은 폴더를 연다.
 * [File] - [Settings] - [Plugins] - [Install plugin from disk...], ANTLR v4 Grammar Plugin을 설치한다.
+* 'SimpleLexer.g4', 'SimpleParser.g4'를 오른쪽 클릭하고, Configure Antlr... 을 선택한다.
+* 'output directory where ...' 란 에 'src'라고 입력,  'Package/namespace ...'에는 'ANTLR'를 입력
 * 'SimpleLexer.g4', 'SimpleParser.g4'를 오른쪽 클릭하고, Generate ANTLR Recognizer를 누른다. ('gen' 폴더 생성됨)
 * [File] - [Project Structure] - [Project], Project SDK를 1.8버전으로 설정한다.
 * 같은 탭에서, Project Language Level을 (8 - Lambdas, ...)로 설정한다.
