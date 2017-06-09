@@ -3,22 +3,26 @@ import java.util.*;
 
 /* Singleton Class */
 public class SimpleVM  {
-    static final int size = 256;
-    private static SimpleVM vm = new SimpleVM();
+    // Virtual Hardwares
+    private static int instReg;
+    private static Inst[] procReg;
+    private static DataReg dataReg;
+    private static CallStk callStk;
+    private static HashMap<String, Inst[]> procMap;
+    private static final String regex = " (?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 
-    private DataReg dataReg;
-    private InstReg instReg;
-    private CallStack callStk;
-    private HashMap<String, Inst[]> procMap;
-
-    private SimpleVM() {
+    static {
+        instReg = 0;
+        procReg = null;
         dataReg = new DataReg();
-        callStk = new CallStack();
+        callStk = new CallStk();
         procMap = new HashMap<>();
     }
 
-    private boolean stepInst() {
-        Inst inst = instReg.getInst();
+    private static boolean stepInst() {
+        if (instReg > procReg.length)
+            throw new SimpleException(ErrorCode.OutProcRagne);
+        Inst inst = procReg[instReg++];
 
         switch (inst.code) {
             case NOP_:
@@ -82,13 +86,13 @@ public class SimpleVM  {
             break;
             case JMP_I: {
                 int dst = ((Int) inst.opd[0]).v;
-                instReg.inst += dst;
+                instReg += dst;
             }
             break;
             case TEST_RI: {
                 boolean cond = ((Bool) dataReg.read((Reg) inst.opd[0])).v;
                 int dst = ((Int) inst.opd[1]).v;
-                if (cond) instReg.inst += dst;
+                if (cond) instReg += dst;
             }
             break;
             case CALL_RI: {
@@ -118,11 +122,10 @@ public class SimpleVM  {
                     }
                     break;
                     default: {
-                        if (!callStk.push(instReg.proc, proc, instReg.inst, dataReg.base))
+                        if (!callStk.push(procReg, instReg, dataReg.base))
                             throw new SimpleException(ErrorCode.StackOverflow);
-                        instReg.name = proc;
-                        instReg.proc = procMap.get(proc);
-                        instReg.inst = 0;
+                        procReg = procMap.get(proc);
+                        instReg = 0;
                         dataReg.base = src.v;
                     }
                     break;
@@ -135,10 +138,9 @@ public class SimpleVM  {
                 dataReg.write(dst, Data.copy(dataReg.read(src)));
                 if (!callStk.pop())
                     return false;
-                instReg.proc = callStk.topPR();
-                instReg.inst = callStk.topIR();
+                procReg = callStk.topPR();
+                instReg = callStk.topIR();
                 dataReg.base = callStk.topBR();
-                instReg.name = callStk.topProcName();
             }
             break;
             case RET_I: {
@@ -147,19 +149,17 @@ public class SimpleVM  {
                 dataReg.write(dst, Data.copy(src));
                 if (!callStk.pop())
                     return false;
-                instReg.proc = callStk.topPR();
-                instReg.inst = callStk.topIR();
+                procReg = callStk.topPR();
+                instReg = callStk.topIR();
                 dataReg.base = callStk.topBR();
-                instReg.name = callStk.topProcName();
             }
             break;
             case RET_: {
                 if (!callStk.pop())
                     return false;
-                instReg.proc = callStk.topPR();
-                instReg.inst = callStk.topIR();
+                procReg = callStk.topPR();
+                instReg = callStk.topIR();
                 dataReg.base = callStk.topBR();
-                instReg.name = callStk.topProcName();
             }
             break;
             case UMN_RR: {
@@ -558,8 +558,8 @@ public class SimpleVM  {
     loadProc(String[] inst, int idx, String name, String size) {
         Inst[] proc = new Inst[Integer.parseInt(size)];
         for (int i = 0; i < proc.length; i++)
-            proc[i] = Inst.valueOf(inst[idx + i].split(" (?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)"));
-        vm.procMap.put(name, proc);
+            proc[i] = Inst.valueOf(inst[idx + i].split(regex));
+        procMap.put(name, proc);
         return proc.length;
     }
 
@@ -567,7 +567,7 @@ public class SimpleVM  {
     loadInst(String[] inst) {
         List<Inst> main = new ArrayList<>();
         for (int i = 0; i < inst.length; i++) {
-            String[] token = inst[i].split(" (?=(?:[^\\\"]*\\\"[^\\\"]*\\\")*[^\\\"]*$)");
+            String[] token = inst[i].split(regex);
             if (token[0].equals("PROC"))
                 i += loadProc(inst, i + 1, token[1], token[2]);
             else
@@ -576,21 +576,25 @@ public class SimpleVM  {
         main.add(Inst.valueOf(new String[]{"RET"}));
 
         Inst[] proc = main.toArray(new Inst[main.size()]);
-        vm.procMap.put(null, proc);
-        vm.instReg = new InstReg(null, proc);
+        procMap.put("", proc);
+        procReg = proc;
+        instReg = 0;
         try {
-            while (vm.stepInst());
+            while (stepInst());
         }
         catch (SimpleException e) {
-            e.proc = vm.instReg.name;
-            e.line = vm.instReg.inst;
+            e.proc = ((Str)dataReg.data[dataReg.base]).v;
+            e.line = instReg;
             throw e;
         }
         catch (Exception e) {
-            throw new SimpleException(e, ErrorCode.Unknown, vm.instReg.name, vm.instReg.inst);
+            throw new SimpleException(e,
+                    ErrorCode.Unknown,
+                    ((Str)dataReg.data[dataReg.base]).v,
+                    instReg);
         }
     }
 
     public static void
-    printReg(String str) { System.out.println(vm.dataReg.read(Reg.valueOf(str))); }
+    printReg(String str) { System.out.println(dataReg.read(Reg.valueOf(str))); }
 }

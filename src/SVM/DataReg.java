@@ -1,7 +1,7 @@
 package SVM;
 
 class DataReg {
-    Data[] data = new Data[SimpleVM.size];
+    Data[] data = new Data[256];
     int base;
 
     Data read(Reg src) {
