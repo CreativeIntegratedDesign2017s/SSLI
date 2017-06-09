@@ -1,5 +1,3 @@
-import org.antlr.v4.runtime.ParserRuleContext;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -148,16 +146,12 @@ class TypeChecker extends ASTListener<Expression> {
 
     @Override
     public Expression visitProcUnit(ASTProcUnit ctx) {
-        SymbolTable.FuncSymbol f = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.pid.getText());
-        ValueType retType = f.overloads.get(f.overloads.size() - 1).rType;
+        Function f = symTable.getFunction(ctx);
 
         ValueExpression retExpr = (ValueExpression)ctx.stmtList.visit(this);
         if (retExpr == null)
             retExpr = new ValueExpression(new VoidType(), false, true);
-        if (!retExpr.getBase().equals(retType))
-            throw new RuleException(ctx,
-                    String.format("Procedure %s's return type is not match with contents (%s<->%s)",
-                            ctx.pid.getText(), retType, retExpr.getBase()));
+        f.setReturnType((SingleType)retExpr.getBase());
         return null;
     }
 

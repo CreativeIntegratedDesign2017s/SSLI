@@ -4,7 +4,7 @@ prgm:	unit* ;
 
 /* Interpretation Unit */
 unit:	stmt								# Statement
-    |	rtype ID '(' para_list ')' block	# Procedure
+    |	PROC ID '(' para_list ')' block	    # Procedure
     |	IMPORT STR ';'						# Import
     ;
 

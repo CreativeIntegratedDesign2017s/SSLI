@@ -17,7 +17,6 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
     public ASTNode visitProcedure(SimpleParser.ProcedureContext ctx) {
         ASTProcUnit unit = new ASTProcUnit(ctx);
         unit.pid = ctx.ID().getSymbol();
-        unit.returnType = (ctx.rtype().VOID() != null) ? null : ctx.rtype().ID().getSymbol();
 
         SimpleParser.Para_listContext param = ctx.para_list();
         int count = (param.getChildCount() + 1) / 3;

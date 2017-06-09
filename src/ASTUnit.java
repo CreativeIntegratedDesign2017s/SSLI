@@ -39,7 +39,6 @@ class ASTProcUnit extends ASTUnit {
         Boolean		ref;
     }
 
-    Token returnType;
     Token pid;
     List<ParaType> type = new ArrayList<>();
     ASTStmtList stmtList;
