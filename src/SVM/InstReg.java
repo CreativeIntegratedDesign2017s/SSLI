@@ -3,8 +3,9 @@ package SVM;
 class InstReg {
     Inst[] proc;
     int inst;
+    String name;
 
-    InstReg(Inst[] inst) { proc = inst; }
+    InstReg(String name, Inst[] inst) { this.name = name; proc = inst; }
 
     Inst getInst() {
         if (inst >= proc.length)

@@ -118,8 +118,9 @@ public class SimpleVM  {
                     }
                     break;
                     default: {
-                        if (!callStk.push(instReg.proc, instReg.inst, dataReg.base))
+                        if (!callStk.push(instReg.proc, proc, instReg.inst, dataReg.base))
                             throw new SimpleException(ErrorCode.StackOverflow);
+                        instReg.name = proc;
                         instReg.proc = procMap.get(proc);
                         instReg.inst = 0;
                         dataReg.base = src.v;
@@ -137,6 +138,7 @@ public class SimpleVM  {
                 instReg.proc = callStk.topPR();
                 instReg.inst = callStk.topIR();
                 dataReg.base = callStk.topBR();
+                instReg.name = callStk.topProcName();
             }
             break;
             case RET_I: {
@@ -148,6 +150,7 @@ public class SimpleVM  {
                 instReg.proc = callStk.topPR();
                 instReg.inst = callStk.topIR();
                 dataReg.base = callStk.topBR();
+                instReg.name = callStk.topProcName();
             }
             break;
             case RET_: {
@@ -156,6 +159,7 @@ public class SimpleVM  {
                 instReg.proc = callStk.topPR();
                 instReg.inst = callStk.topIR();
                 dataReg.base = callStk.topBR();
+                instReg.name = callStk.topProcName();
             }
             break;
             case UMN_RR: {
@@ -573,7 +577,7 @@ public class SimpleVM  {
 
         Inst[] proc = main.toArray(new Inst[main.size()]);
         vm.procMap.put(null, proc);
-        vm.instReg = new InstReg(proc);
+        vm.instReg = new InstReg(null, proc);
         try {
             while (vm.stepInst());
         }
@@ -582,7 +586,7 @@ public class SimpleVM  {
             throw e;
         }
         catch (Exception e) {
-            throw new SimpleException(e, ErrorCode.Unknown, vm.instReg.inst);
+            throw new SimpleException(e, ErrorCode.Unknown, vm.instReg.name, vm.instReg.inst);
         }
     }
 

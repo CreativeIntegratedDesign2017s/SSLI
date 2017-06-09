@@ -31,7 +31,7 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
             ptype.var = param.ID(i).getSymbol();
             ptype.tid = ptypeCtx.ID().getSymbol();
             ptype.dim = (ptypeCtx.getChildCount() - 1) / 2;
-            ptype.ref = ptype.dim == 0 && (ptypeCtx.getChildCount() > 1);
+            ptype.ref = (ptypeCtx.getChildCount() > 1);
             unit.type.add(ptype);
         }
 

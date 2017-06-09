@@ -129,8 +129,9 @@ public class SimpleInterpreter {
 
             // Build AST
             ASTBuilder ab = new ASTBuilder();
+            ASTGraphLog gv = new ASTGraphLog("ASTGraph.log");
             ASTNode prgm = ab.visit(tree);
-            prgm.visit(new ASTGraphLog("ASTGraph.log"));
+            gv.visit(prgm);
 
             // Scope Validity & Type Consistency
             try {
@@ -171,7 +172,10 @@ public class SimpleInterpreter {
                 try {
                     SimpleVM.loadInst(irCodes);
                 } catch (SimpleException e) {
-                    System.err.printf("Line %d, Code: %s\n", e.line, e.code);
+                    System.err.printf("Proc %s, Line %d, Code: %s\n",
+                            (e.proc == null) ? "" : e.proc,
+                            e.line,
+                            e.code);
                     System.err.println(e.getMessage());
                     return;
                 }
