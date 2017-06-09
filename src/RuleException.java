@@ -1,3 +1,5 @@
+import AST.ASTNode;
+
 public class RuleException extends RuntimeException {
     String errorData;
     int localLine;

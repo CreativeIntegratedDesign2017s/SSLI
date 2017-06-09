@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 enum DataType { Bool, Int, Str, Arr }
 

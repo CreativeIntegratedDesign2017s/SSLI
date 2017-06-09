@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 public enum ErrorCode {
     DivideZero,
@@ -9,4 +9,5 @@ public enum ErrorCode {
     OutRegRange,
     OutProcRagne,
     StackOverflow,
+    Unknown
 }

@@ -1,4 +1,4 @@
-package SimpleVM;
+package SVM;
 
 class CallStack {
     private Inst[][] proc = new Inst[SimpleVM.size][];
