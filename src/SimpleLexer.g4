@@ -31,6 +31,7 @@ OR  :	'||' ;
 AMP :	'&' ;
 
 /* Keywords */
+PROC:   'proc';
 IF  :	'if' ;
 THEN:	'then' ;
 ELSE:	'else' ;

@@ -186,8 +186,14 @@ public class IRBuilder extends ASTListener<IRCA> {
         else
         {
             top = target;
+            IRStatement copyingCommand;
+            if (ref || irca.argument instanceof Constant)
+                copyingCommand = new IRStatement("LOAD", target, irca.argument);
+            else
+                copyingCommand = new IRStatement("COPY", target, irca.argument);
+
             return aggregateResult(irca,
-                    new IRCA(new IRChunk(new IRStatement(ref ? "LOAD" : "COPY", target, irca.argument)), top));
+                    new IRCA(new IRChunk(copyingCommand), top));
         }
     }
 

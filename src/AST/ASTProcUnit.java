@@ -16,8 +16,7 @@ public class ASTProcUnit extends ASTUnit {
         public Integer		dim;
         public Boolean		ref;
     }
-
-    public Token returnType;
+    
     public Token pid;
     public List<ParaType> type = new ArrayList<>();
     public ASTStmtList stmtList;

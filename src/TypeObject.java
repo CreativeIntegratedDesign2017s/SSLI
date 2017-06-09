@@ -123,6 +123,11 @@ class Function extends TypeObject {
         this.rType = rType;
         this.acceptParams = acceptParams;
     }
+
+    public void setReturnType(SingleType rType) {
+        this.rType = rType;
+    }
+
     @Override
     public String getTypeName() {
         return "[" +

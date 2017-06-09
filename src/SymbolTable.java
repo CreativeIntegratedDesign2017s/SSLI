@@ -345,12 +345,20 @@ class SymbolTable {
         return retSymbol;
     }
 
+    Function declareFunction(String symbolName, List<ParameterExpr> parameters, boolean builtIn) {
+        return _declareFunction(symbolName, null, parameters, builtIn);
+    }
+
     Function declareFunction(String symbolName, ValueExpr rExpr, List<ParameterExpr> parameters, boolean builtIn) {
         SingleType rTo = getSingleType(rExpr.typeName);
         if (rTo == null)
             throw new RuntimeException(String.format(
                     "No target type named by %s is declared for return type of %s", rExpr.typeName, symbolName));
 
+        return _declareFunction(symbolName, rTo, parameters, builtIn);
+    }
+
+    private Function _declareFunction(String symbolName, SingleType rTo, List<ParameterExpr> parameters, final boolean builtIn) {
         List<ValueType> paramExpressions = parameters.stream().map(paramExpr -> {
             SingleType pTo = getSingleType(paramExpr.typeName);
             if (pTo == null)
