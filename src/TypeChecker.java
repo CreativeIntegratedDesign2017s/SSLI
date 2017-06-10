@@ -304,6 +304,10 @@ class TypeChecker extends ASTListener<Expression> {
     public Expression visitProcCall(ASTProcCall ctx) {
         SymbolTable.FuncSymbol fSymbol = (SymbolTable.FuncSymbol) symTable.getSymbol(ctx.pid.getText());
 
+        if (fSymbol == null) {
+            throw new RuleException(ctx, String.format("Can't found the function symbol with %s", ctx.pid.getText()));
+        }
+
         List<Expression> arguments = ctx.param.stream()
                 .map(n -> n.visit(this))
                 .collect(Collectors.toList());

@@ -141,8 +141,11 @@ class Function extends TypeObject {
     }
 
     public String getDecorator() {
-        return "@" + String.join("@",
-                acceptParams.stream().map(ValueType::getTypeName).collect(Collectors.toList()));
+        if (acceptParams.size() > 0)
+            return "@" + String.join("@",
+                    acceptParams.stream().map(ValueType::getTypeName).collect(Collectors.toList()));
+        else
+            return "";
     }
 }
 

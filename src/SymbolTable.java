@@ -157,15 +157,17 @@ class SymbolTable {
         declareFunction("print", new ValueExpr("void"),
                 new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("int", 0, false));
-                }}, false);
+                }}, true);
         declareFunction("print", new ValueExpr("void"),
                 new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("str", 0, false));
-                }}, false);
+                }}, true);
         declareFunction("print", new ValueExpr("void"),
                 new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("bool", 0, false));
-                }}, false);
+                }}, true);
+        declareFunction("time", new ValueExpr("int"),
+                new ArrayList<>(), true);
 
         class OperatorInfo {
             String name, rType;

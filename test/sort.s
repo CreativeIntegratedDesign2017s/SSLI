@@ -31,6 +31,7 @@ proc print(int[] a, int len) {
     end
 }
 
+int start = time();
 // main()
 int[5] a;
 a[0] = 5; a[1] = 4; a[2] = 3; a[3] = 2; a[4] = 1;
@@ -39,3 +40,5 @@ print(a, 5);
 sort(a, 5);
 print("    after:");
 print(a, 5);
+print("    time:");
+print(time() - start);

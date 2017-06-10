@@ -21,6 +21,8 @@ while (i < 32) do {
     i = i + 1;
 } end
 
+int start = time();
+
 // pragma scope
 i = 0;
 while (i < 32) do {
@@ -51,3 +53,5 @@ while (i < 32) do {
     } end
     i = i + 1;
 } end
+
+print(time() - start);

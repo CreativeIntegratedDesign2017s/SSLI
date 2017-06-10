@@ -168,14 +168,17 @@ public class IRBuilder extends ASTListener<IRCA> {
     }
 
     IRCA aggregateResult(IRCA ...results) {
-        return new IRCA(new IRChunk(){{
-            statements = Arrays.stream(results).filter(Objects::nonNull)
-                    .map(c -> c.chunk)
-                    .filter(Objects::nonNull)
-                    .map(c -> c.statements)
-                    .flatMap(List::stream)
-                    .collect(Collectors.toList());
-        }}, results[results.length -1].argument);
+        if (results.length == 0)
+            return null;
+        else
+            return new IRCA(new IRChunk() {{
+                statements = Arrays.stream(results).filter(Objects::nonNull)
+                        .map(c -> c.chunk)
+                        .filter(Objects::nonNull)
+                        .map(c -> c.statements)
+                        .flatMap(List::stream)
+                        .collect(Collectors.toList());
+            }}, results[results.length - 1].argument);
     }
 
     IRCA visitWithIncIndex(ASTNode n, boolean ref) {
