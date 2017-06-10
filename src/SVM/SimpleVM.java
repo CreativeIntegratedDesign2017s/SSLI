@@ -99,6 +99,11 @@ public class SimpleVM  {
                 Reg src = (Reg) inst.opd[0];
                 String proc = ((Str) dataReg.read(src)).v;
                 switch (proc) {
+                    case "time": {
+                        Int time = new Int((int)System.currentTimeMillis());
+                        dataReg.write(src, time);
+                    }
+                    break;
                     case "print@bool":
                         System.out.print(((Bool)dataReg.data[dataReg.base + src.v + 1]).v);
                         break;

@@ -3,6 +3,7 @@
 *.log
 out
 gen
+META-INF
 
 # Must Include
 !.gitignore

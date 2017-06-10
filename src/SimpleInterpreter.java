@@ -2,7 +2,7 @@ import ANTLR.*;
 import AST.*;
 import SVM.*;
 import java.io.*;
-import java.util.stream.Collectors;
+import java.util.*;
 
 import org.antlr.v4.runtime.*;
 import org.antlr.v4.runtime.tree.*;
@@ -18,13 +18,16 @@ public class SimpleInterpreter {
     static class ModeConfig {
         boolean inOpt;
         boolean outOpt;
+        boolean execOpt;
         String inFile;
         String outFile;
+        String execFile;
 
         ModeConfig(String args[]) {
             Options options = new Options();
             options.addOption(new Option("f", true, "input file"));
             options.addOption(new Option("o", true, "output file"));
+            options.addOption(new Option("x", true, "exec file"));
             try {
                 CommandLineParser parser = new DefaultParser();
                 CommandLine cmd = parser.parse(options, args);
@@ -32,6 +35,8 @@ public class SimpleInterpreter {
                 inFile = cmd.getOptionValue("f");
                 outOpt = cmd.hasOption("o");
                 outFile = cmd.getOptionValue("o");
+                execOpt = cmd.hasOption("x");
+                execFile = cmd.getOptionValue("x");
             }
             catch (ParseException e) {
                 System.err.println(e.getMessage());
@@ -94,13 +99,24 @@ public class SimpleInterpreter {
     /* Main */
     static public void main(String args[]) throws IOException {
         config = new ModeConfig(args);
-        InputStream is = (config.inOpt) ? (new FileInputStream(config.inFile)) : (System.in);
-
-        reader = new CodeReader(is);
-        symTable = new SymbolTable();
-        globalIndex = new StackIndex(0, true);
-
-        InterpretProgramViaStream();
+        if (config.execOpt) {
+            try(BufferedReader br = new BufferedReader(new FileReader(config.execFile))) {
+                List<String> list = new ArrayList<>();
+                String line = br.readLine();
+                while (line != null) {
+                    list.add(line);
+                    line = br.readLine();
+                }
+                SimpleVM.loadInst(list.toArray(new String[list.size()]));
+            }
+        }
+        else {
+            InputStream is = (config.inOpt) ? (new FileInputStream(config.inFile)) : (System.in);
+            reader = new CodeReader(is);
+            symTable = new SymbolTable();
+            globalIndex = new StackIndex(0, true);
+            InterpretProgramViaStream();
+        }
     }
 
     /* Core Loop */
