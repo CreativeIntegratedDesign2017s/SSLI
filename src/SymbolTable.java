@@ -45,10 +45,6 @@ class SymbolTable {
                 return true;
             }
 
-            ValueType rType = overloads.get(0).rType;
-            if (!rType.equals(ext.rType))
-                return false;   // 리턴이 다른 함수 오버로딩 허용 안함
-
             for (Function overload : overloads) {
                 List<ValueType> params = overload.acceptParams;
                 if (params.equals(ext.acceptParams)) {
