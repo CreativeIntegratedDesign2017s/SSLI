@@ -1,4 +1,4 @@
-void swap(int& a, int &b) {
+proc swap(int& a, int &b) {
     int t = a;
     a = b;
     b = t;

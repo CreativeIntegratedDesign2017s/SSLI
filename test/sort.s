@@ -1,7 +1,7 @@
 // Algorithm: Selection Sort
 // Input: int array, length
 // Description: Sorting int array in ascending order
-void sort(int[] a, int len) {
+proc sort(int[] a, int len) {
     int i = 0;
 
     while (i < len) do {
@@ -23,7 +23,7 @@ void sort(int[] a, int len) {
 }
 
 // Print int array
-void print(int[] a, int len) {
+proc print(int[] a, int len) {
     int i = 0;
     while (i < len) do
         print(a[i]);
