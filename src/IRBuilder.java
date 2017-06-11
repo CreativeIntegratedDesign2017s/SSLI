@@ -80,11 +80,15 @@ class RawArg extends IRArgument {
 }
 
 class IRStatement {
-    String stmt;
     String command;
+    IRArgument[] arguments;
     IRStatement(String command, IRArgument ... arguments) {
         this.command = command;
-        stmt = command;
+        this.arguments = arguments;
+    }
+    @Override
+    public String toString() {
+        String stmt = command;
         if (arguments.length > 0)
         {
             for (IRArgument arg : arguments) {
@@ -94,9 +98,6 @@ class IRStatement {
             stmt += " " + String.join(" ",
                     Arrays.stream(arguments).map(Object::toString).collect(Collectors.toList()));
         }
-    }
-    @Override
-    public String toString() {
         return stmt;
     }
 }
@@ -278,6 +279,9 @@ public class IRBuilder extends ASTListener<IRCA> {
                 stackInitializer = null;        // 초기화가
                 initializeChunk = aggregateResult(initializeChunk,
                         new IRCA(new IRChunk(new IRStatement("LOAD", target, initializeChunk.argument))));
+            } else if (ctx.init instanceof ASTBinary || ctx.init instanceof ASTUnary) {
+                IRStatement lastStmt = initializeChunk.chunk.statements.get(initializeChunk.chunk.statements.size() - 1);
+                lastStmt.arguments[0] = target;
             } else
                 initializeChunk = aggregateResult(initializeChunk,
                         new IRCA(new IRChunk(new IRStatement("COPY", target, initializeChunk.argument))));
@@ -308,8 +312,14 @@ public class IRBuilder extends ASTListener<IRCA> {
         StackIndex prevTop = top;
         IRCA dest = ctx.lval.visit(this);
         IRCA source = ctx.rval.visit(this);
-
         top = prevTop;
+
+        if (ctx.lval instanceof ASTVariable && (ctx.rval instanceof ASTBinary || ctx.rval instanceof ASTUnary)) {
+            IRStatement lastStmt = source.chunk.statements.get(source.chunk.statements.size() - 1);
+            lastStmt.arguments[0] = dest.argument;
+            return source;
+        }
+
         IRCA move = new IRCA(new IRChunk(new IRStatement("MOVE", dest.argument, source.argument)));
         return aggregateResult(dest, source, move);
     }
