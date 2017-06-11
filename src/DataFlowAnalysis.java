@@ -3,25 +3,20 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 public class DataFlowAnalysis {
-    List<IROptimizer.IRNode> source;
-    DataFlowAnalysis (List<IROptimizer.IRNode> nodes) {
-        this.source = nodes;
-    }
-
     class ReachingDefinition {
         Map<IROptimizer.IRNode, Set<IROptimizer.IRNode>> in, out, gen, kill;
         Map<StackIndex, Set<IROptimizer.IRNode>> defs;
 
-        ReachingDefinition() {
+        ReachingDefinition(List<IROptimizer.IRNode> source) {
             in = new HashMap<>();
             out = new HashMap<>();
             defs = new HashMap<>();
             gen = new HashMap<>();
             kill = new HashMap<>();
 
-            String[] ops = {"MOVE", "LOAD", "UMN", "NOT", "ADD", "SUB", "DIV", "MUL", "POW",
-                    "EQ", "GT", "GE", "LT", "LE", "NEQ", "GET_TABLE", "NEW_TABLE", "CALL"};
-            Set<String> defOps = new HashSet<>(Arrays.asList(ops));
+            String[] opsGen = {"MOVE", "COPY", "UMN", "NOT", "ADD", "SUB", "DIV", "MUL", "POW",
+                    "EQ", "GT", "GE", "LT", "LE", "NEQ", "NEWTABLE", "CALL", "LOAD", "GETTABLE"};
+            Set<String> defOps = new HashSet<>(Arrays.asList(opsGen));
 
             // initialize structures and make defs
             for (IROptimizer.IRNode node : source) {
@@ -35,19 +30,28 @@ public class DataFlowAnalysis {
                     Set<IROptimizer.IRNode> dd = defs.getOrDefault(stmt.arguments[0], new HashSet<>());
                     dd.add(node);
                     defs.put((StackIndex)stmt.arguments[0], dd);
-                } else
-                    kill.put(node, new HashSet<>());
+                }
             }
 
             // kill initialize
             for (IROptimizer.IRNode node : source) {
                 IRStatement stmt = node.stmt;
+                Set<IROptimizer.IRNode> ks = new HashSet<>();
+                kill.put(node, ks);
                 if (defOps.contains(stmt.command)) {
-                    Set<IROptimizer.IRNode> ks = new HashSet<>();
-                    kill.put(node, ks);
-                    Set<IROptimizer.IRNode> ddd = defs.get(stmt.arguments[0]);
-                    List<IROptimizer.IRNode> k = ddd.stream().filter(o -> !o.equals(node)).collect(Collectors.toList());
-                    ks.addAll(k);
+                    Set<IROptimizer.IRNode> defsWithArg = defs.get(stmt.arguments[0]);
+                    if (defsWithArg != null) {
+                        List<IROptimizer.IRNode> k = defsWithArg.stream().filter(o -> !o.equals(node)).collect(Collectors.toList());
+                        ks.addAll(k);
+                    }
+                    if (stmt.command.equals("LOAD") && stmt.arguments[1] instanceof StackIndex) {
+                        // 메모리 로드는 둘의 위상이 같아지는 것. 즉 양방향으로 kill을 세팅한다.
+                        defsWithArg = defs.get(stmt.arguments[1]);
+                        if (defsWithArg != null) {
+                            List<IROptimizer.IRNode> k = defsWithArg.stream().filter(o -> !o.equals(node)).collect(Collectors.toList());
+                            ks.addAll(k);
+                        }
+                    }
                 }
             }
 
@@ -111,7 +115,7 @@ public class DataFlowAnalysis {
 
             @Override
             public int hashCode() {
-                return (dest.toString() + command + argSet.toString()).hashCode();
+                return toString().hashCode();
             }
 
             @Override
@@ -122,14 +126,14 @@ public class DataFlowAnalysis {
         Map<IROptimizer.IRNode, Set<ExpressionInfo>> gen, in, out;
         Map<IROptimizer.IRNode, IRArgument> kill;
 
-        ReachingExpression() {
+        ReachingExpression(List<IROptimizer.IRNode> source) {
             in = new HashMap<>();
             out = new HashMap<>();
             gen = new HashMap<>();
             kill = new HashMap<>();
 
-            String[] ops = {"MOVE", "LOAD", "UMN", "NOT", "ADD", "SUB", "DIV", "MUL", "POW",
-                    "EQ", "GT", "GE", "LT", "LE", "NEQ", "GET_TABLE", "NEW_TABLE", "CALL"};
+            String[] ops = {"UMN", "NOT", "ADD", "SUB", "DIV", "MUL", "POW",
+                    "EQ", "GT", "GE", "LT", "LE", "NEQ"};
             Set<String> defOps = new HashSet<>(Arrays.asList(ops));
 
             Set<ExpressionInfo> allExprs = new HashSet<>();
@@ -193,8 +197,11 @@ public class DataFlowAnalysis {
         }
     }
 
-    void DoAnalysis() {
-        ReachingDefinition rd = new ReachingDefinition();
-        ReachingExpression re = new ReachingExpression();
+    ReachingDefinition AnalizeReachingDefinition(List<IROptimizer.IRNode> nodes) {
+        return new ReachingDefinition(nodes);
+    }
+
+    ReachingExpression AnalizeReachingExpression(List<IROptimizer.IRNode> nodes) {
+        return new ReachingExpression(nodes);
     }
 }

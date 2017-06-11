@@ -11,10 +11,17 @@ abstract class IRArgument {
 class StackIndex extends IRArgument {
     int index;
     boolean globalStack;
+    boolean temporary;
 
     StackIndex(int index, boolean global) {
         this.index = index;
         this.globalStack = global;
+        temporary = false;
+    }
+    StackIndex(int index, boolean global, boolean temp) {
+        this.index = index;
+        this.globalStack = global;
+        this.temporary = temp;
     }
 
     @Override
@@ -23,7 +30,7 @@ class StackIndex extends IRArgument {
     }
 
     StackIndex offset(int offset) {
-        return new StackIndex(index + offset, globalStack);
+        return new StackIndex(index + offset, globalStack, true);
     }
 
     @Override
@@ -33,6 +40,11 @@ class StackIndex extends IRArgument {
         }
         StackIndex si = (StackIndex)o;
         return si.globalStack == globalStack && si.index == index;
+    }
+
+    @Override
+    public int hashCode() {
+        return toString().hashCode();
     }
 }
 
@@ -251,10 +263,19 @@ public class IRBuilder extends ASTListener<IRCA> {
     }
 
     @Override
+    public IRCA visitEval(ASTEval ctx) {
+        StackIndex prevTop = top;
+        IRCA expr = visit(ctx.expr);
+        top = prevTop;
+        return expr;
+    }
+
+    @Override
     public IRCA visitDecl(ASTDecl ctx) {
         SymbolTable.Symbol s = symTable.getSymbol(ctx);
         symbolIndex.put(s, incIndex(1));
         StackIndex target = top;
+        target.temporary = false;
 
         IRCA stackInitializer = null;
         SymbolTable.VarSymbol vs = (SymbolTable.VarSymbol)s;
@@ -290,6 +311,7 @@ public class IRBuilder extends ASTListener<IRCA> {
             initializeChunk = new IRCA(new IRChunk(
                     new IRStatement("LOAD", target, new Constant(vs.type.getDefaultValue()))));
 
+        top = target;
         return aggregateResult(stackInitializer, initializeChunk);
     }
 
@@ -321,6 +343,7 @@ public class IRBuilder extends ASTListener<IRCA> {
         }
 
         IRCA move = new IRCA(new IRChunk(new IRStatement("MOVE", dest.argument, source.argument)));
+		top = prevTop;
         return aggregateResult(dest, source, move);
     }
 
@@ -383,6 +406,7 @@ public class IRBuilder extends ASTListener<IRCA> {
         IRCA fromChunk = visitWithIncIndex(ctx.index1, false);
         IRCA toChunk = visitWithIncIndex(ctx.index2, false);
         IRCA callChunk = new IRCA(new IRChunk(new IRStatement("CALL", prevTop, new Constant(3))), prevTop);
+        top = prevTop;
         return aggregateResult(funcChunk, containerChunk, fromChunk, toChunk, callChunk);
     }
 
@@ -393,16 +417,17 @@ public class IRBuilder extends ASTListener<IRCA> {
 
         IRCA opChunk = new IRCA(new IRChunk(
                 new IRStatement("GETTABLE", target, arrChunk.argument, indexChunk.argument)), target);
+        top = target;
         return aggregateResult(arrChunk, indexChunk, opChunk);
     }
 
     @Override
     public IRCA visitUnary(ASTUnary ctx) {
-        StackIndex target = incIndex(1);
         IRCA oprandChunk = visit(ctx.oprnd);
-        if (ctx.op.getType() == SimpleParser.ADD)
+        if (ctx.op.getType() == SimpleParser.ADD) {
             return oprandChunk;
-
+        }
+        StackIndex target = incIndex(1);
         if (ctx.op.getType() == SimpleParser.SUB) {
             IRCA opChunk = new IRCA(new IRChunk(new IRStatement("UMN", target, oprandChunk.argument)), target);
             return aggregateResult(oprandChunk, opChunk);
@@ -466,6 +491,7 @@ public class IRBuilder extends ASTListener<IRCA> {
                 target
         );
 
+		top = target;
         return aggregateResult(oprnd1Chunk, oprnd2Chunk, opChunk);
     }
 
@@ -482,6 +508,7 @@ public class IRBuilder extends ASTListener<IRCA> {
         IRCA parameterChunk = aggregateResult(exprs.toArray(new IRCA[exprs.size()]));
         IRCA callChunk = new IRCA(new IRChunk(
                 new IRStatement("CALL", target, new Constant(top.index - target.index))), target);
+        top = target;
         return aggregateResult(funcChunk, parameterChunk, callChunk);
     }
 }

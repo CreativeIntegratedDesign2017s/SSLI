@@ -18,6 +18,8 @@ public class SimpleInterpreter {
     static private ScopeChecker scpChecker;
     static private TypeChecker typeChecker;
     static private IRBuilder irBuilder;
+    static private StackIndex globalIndex;
+    static private IROptimizer optimizer;
 
     static class ModeConfig {
         boolean inOpt;
@@ -53,6 +55,7 @@ public class SimpleInterpreter {
 
     /* Main */
     static public void main(String args[]) throws IOException {
+        optimizer = new IROptimizer();
         config = new ModeConfig(args);
         if (config.execOpt) {
             try (BufferedReader br = new BufferedReader(new FileReader(config.execFile))) {
@@ -116,10 +119,17 @@ public class SimpleInterpreter {
 
             // IR Code Generation
             IRCA prgmChunk = irBuilder.visit(prgm);
+<<<<<<< HEAD
             IROptimizer optimizer = new IROptimizer(prgmChunk.chunk.statements.toArray(new IRStatement[prgmChunk.chunk.statements.size()]));
             optimizer.doOptimize();
+=======
+            IRStatement[] statements = prgmChunk.chunk.statements.toArray(
+                    new IRStatement[prgmChunk.chunk.statements.size()]);
 
-            String[] irCodes = prgmChunk.chunk.statements.stream()
+            globalIndex = irBuilder.top;
+>>>>>>> add constant & copy propagation
+
+            String[] irCodes = Arrays.stream(statements)
                     .map(IRStatement::toString)
                     .toArray(String[]::new);
 
@@ -136,7 +146,48 @@ public class SimpleInterpreter {
                 return;
             }
 
+                try {
+                    SimpleVM.loadInst(irCodes);
+                } catch (SimpleException e) {
+                    System.err.printf("Proc %s, Line %d, Code: %s\n",
+                            (e.proc == null) ? "" : e.proc,
+                            e.line,
+                            e.code);
+                    System.err.println(e.getMessage());
+                    return;
+                }
+            }
+
+            optimizer.setSource(statements);
+            statements = optimizer.doOptimize();
+
+            irCodes = Arrays.stream(statements)
+                    .map(IRStatement::toString)
+                    .toArray(String[]::new);
+            if (config.inOpt && config.outOpt) {
+                OutputStream fs = new FileOutputStream(config.outFile);
+                fs.write(String.join("\n", irCodes).getBytes());
+                fs.close();
+            }
+            else {
+                BufferedWriter bw = new BufferedWriter(new FileWriter("IRCode_opt.log"));
+                bw.write(String.join("\n", irCodes));
+                bw.close();
+
+                try {
+                    SimpleVM.loadInst(irCodes);
+                } catch (SimpleException e) {
+                    System.err.printf("Proc %s, Line %d, Code: %s\n",
+                            (e.proc == null) ? "" : e.proc,
+                            e.line,
+                            e.code);
+                    System.err.println(e.getMessage());
+                    return;
+                }
+            }
+
             totalLines += code.split("\n").length - 1;
-        } while (!config.inOpt);
+
+        } while (reader.ready());
     }
 }
