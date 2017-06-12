@@ -12,10 +12,14 @@ public class ScopeChecker extends ASTListener<Void> {
 
     @Override
     public Void visitDecl(ASTDecl ctx) {
-        SymbolTable.VarSymbol v = symTable.declareVariable(ctx.var.getText(),
-                new SymbolTable.ValueExpr(ctx.type.tid.getText(), ctx.type.size));
-        symTable.putSymbol(ctx, v);
-        return visitChildren(ctx);
+        try {
+            SymbolTable.VarSymbol v = symTable.declareVariable(ctx.var.getText(),
+                    new SymbolTable.ValueExpr(ctx.type.tid.getText(), ctx.type.size));
+            symTable.putSymbol(ctx, v);
+            return visitChildren(ctx);
+        } catch (RuntimeException e) {
+            throw new RuleException(ctx, e.toString());
+        }
     }
 
     @Override
@@ -39,12 +43,16 @@ public class ScopeChecker extends ASTListener<Void> {
         symTable.enterNewScope();
 
         for (ASTProcUnit.ParaType ptype : ctx.type) {
-            SymbolTable.VarSymbol v = symTable.declareVariable(ptype.var.getText(),
-                    new SymbolTable.ParameterExpr(ptype.tid.getText(), ptype.dim, ptype.ref));
-            symTable.putSymbol(ptype, v);
+            try {
+                SymbolTable.VarSymbol v = symTable.declareVariable(ptype.var.getText(),
+                        new SymbolTable.ParameterExpr(ptype.tid.getText(), ptype.dim, ptype.ref));
+                symTable.putSymbol(ptype, v);
+            } catch (RuntimeException e) {
+                throw new RuleException(ctx, e.toString());
+            }
         }
 
-        Void ret = visitChildren(ctx);
+        Void ret = visitChildren(ctx.stmtList);
 
         symTable.leaveScope();
         return ret;
