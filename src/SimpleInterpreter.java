@@ -13,7 +13,7 @@ public class SimpleInterpreter {
     static private ModeConfig config;
     static private CodeReader reader;
     static private SymbolTable symTable;
-    static private StackIndex globalIndex;
+    static private IRBuilder irBuilder;
 
     static class ModeConfig {
         boolean inOpt;
@@ -114,7 +114,7 @@ public class SimpleInterpreter {
             InputStream is = (config.inOpt) ? (new FileInputStream(config.inFile)) : (System.in);
             reader = new CodeReader(is);
             symTable = new SymbolTable();
-            globalIndex = new StackIndex(0, true);
+            irBuilder = new IRBuilder(new StackIndex(0, true), symTable);
             InterpretProgramViaStream();
         }
     }
@@ -168,9 +168,7 @@ public class SimpleInterpreter {
             totalLines += code.split("\n").length - 1;
 
             // IR Code Generation
-            IRBuilder irBuilder = new IRBuilder(globalIndex, symTable);
             IRCA prgmChunk = irBuilder.visit(prgm);
-            globalIndex = irBuilder.top;
 
             String[] irCodes = prgmChunk.chunk.statements.stream()
                     .map(IRStatement::toString)
