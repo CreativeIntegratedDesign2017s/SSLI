@@ -12,8 +12,6 @@ public class SimpleVM  {
     private static final String regex = " (?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)";
 
     static {
-        instReg = 0;
-        procReg = null;
         dataReg = new DataReg();
         callStk = new CallStk();
         procMap = new HashMap<>();
@@ -559,6 +557,24 @@ public class SimpleVM  {
         return true;
     }
 
+    private static void runThrough() {
+        try { while (true) if (!stepInst()) break; }
+        catch (SimpleException e) {
+            e.proc = ((Str)dataReg.data[dataReg.base]).v;
+            e.line = instReg;
+            throw e;
+        }
+        catch (Exception e) {
+            String proc;
+            if (dataReg.base == 0) proc = "@main";
+            else if (dataReg.data[dataReg.base] == null) proc = "@broken";
+            else if (dataReg.data[dataReg.base].getClass() == Str.class)
+                proc = ((Str)dataReg.data[dataReg.base]).v;
+            else proc = "@broken";
+            throw new SimpleException(e, ErrorCode.Unknown, proc, instReg);
+        }
+    }
+
     private static int
     loadProc(String[] inst, int idx, String name, String size) {
         Inst[] proc = new Inst[Integer.parseInt(size)];
@@ -584,20 +600,7 @@ public class SimpleVM  {
         procMap.put("", proc);
         procReg = proc;
         instReg = 0;
-        try {
-            while (stepInst());
-        }
-        catch (SimpleException e) {
-            e.proc = ((Str)dataReg.data[dataReg.base]).v;
-            e.line = instReg;
-            throw e;
-        }
-        catch (Exception e) {
-            throw new SimpleException(e,
-                    ErrorCode.Unknown,
-                    ((Str)dataReg.data[dataReg.base]).v,
-                    instReg);
-        }
+        runThrough();
     }
 
     public static void
