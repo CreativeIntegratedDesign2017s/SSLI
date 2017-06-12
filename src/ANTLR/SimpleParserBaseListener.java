@@ -64,18 +64,6 @@ public class SimpleParserBaseListener implements SimpleParserListener {
 	 *
 	 * <p>The default implementation does nothing.</p>
 	 */
-	@Override public void enterBlock(SimpleParser.BlockContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
-	@Override public void exitBlock(SimpleParser.BlockContext ctx) { }
-	/**
-	 * {@inheritDoc}
-	 *
-	 * <p>The default implementation does nothing.</p>
-	 */
 	@Override public void enterStmt_list(SimpleParser.Stmt_listContext ctx) { }
 	/**
 	 * {@inheritDoc}

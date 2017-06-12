@@ -38,12 +38,6 @@ public interface SimpleParserVisitor<T> extends ParseTreeVisitor<T> {
 	 */
 	T visitImport(SimpleParser.ImportContext ctx);
 	/**
-	 * Visit a parse tree produced by {@link SimpleParser#block}.
-	 * @param ctx the parse tree
-	 * @return the visitor result
-	 */
-	T visitBlock(SimpleParser.BlockContext ctx);
-	/**
 	 * Visit a parse tree produced by {@link SimpleParser#stmt_list}.
 	 * @param ctx the parse tree
 	 * @return the visitor result

@@ -3,12 +3,11 @@ options { tokenVocab=SimpleLexer; }
 prgm:	unit* ;
 
 /* Interpretation Unit */
-unit:	stmt								# Statement
-    |	PROC ID '(' para_list ')' block	    # Procedure
-    |	IMPORT STR ';'						# Import
+unit:	stmt								            # Statement
+    |	PROC ID '(' para_list ')' stmt_list END	        # Procedure
+    |	IMPORT STR ';'						            # Import
     ;
 
-block: '{' stmt_list '}' ;
 stmt_list: stmt*;
 
 /* Statements */
@@ -19,7 +18,7 @@ stmt:	expr? ';'							            # Evaluate
     |	DO stmt_list WHILE expr END				        # DoWhile
     |	WHILE expr DO stmt_list END				        # WhileDo
     |	RETURN expr? ';'					            # Return
-    |   block                                           # Nested
+    |   '{' stmt_list '}'                              # Nested
     ;
 
 /* Expressions */

@@ -42,7 +42,7 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
             unit.type.add(ptype);
         }
 
-        unit.stmtList = (ASTStmtList)visit(ctx.block().stmt_list());
+        unit.stmtList = (ASTStmtList)visit(ctx.stmt_list());
 
         return unit;
     }
@@ -129,7 +129,7 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
     }
     public ASTNode visitNested(NestedContext ctx) {
         ASTNested nest = new ASTNested(ctx);
-        nest.stmtList = (ASTStmtList)visit(ctx.block().stmt_list());
+        nest.stmtList = (ASTStmtList)visit(ctx.stmt_list());
         return nest;
     }
 

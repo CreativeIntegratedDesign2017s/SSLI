@@ -54,16 +54,6 @@ public interface SimpleParserListener extends ParseTreeListener {
 	 */
 	void exitImport(SimpleParser.ImportContext ctx);
 	/**
-	 * Enter a parse tree produced by {@link SimpleParser#block}.
-	 * @param ctx the parse tree
-	 */
-	void enterBlock(SimpleParser.BlockContext ctx);
-	/**
-	 * Exit a parse tree produced by {@link SimpleParser#block}.
-	 * @param ctx the parse tree
-	 */
-	void exitBlock(SimpleParser.BlockContext ctx);
-	/**
 	 * Enter a parse tree produced by {@link SimpleParser#stmt_list}.
 	 * @param ctx the parse tree
 	 */
