@@ -54,4 +54,6 @@ while (i < 128) do {
     i = i + 1;
 } end
 
+print("Elapsed Time: ");
 print(time() - start);
+print("ms\n");

@@ -29,14 +29,14 @@ public class SimpleVM  {
                 break;
             case MOVE_RR: {
                 Reg dst = (Reg) inst.opd[0];
-                Data src = dataReg.read((Reg) inst.opd[1]);
-                Data.vchg(dataReg.read(dst), src);
+                Data src = (Data) dataReg.read((Reg) inst.opd[1]);
+                Data.vchg((Data) dataReg.read(dst), src);
             }
             break;
             case MOVE_RI: {
                 Reg dst = (Reg) inst.opd[0];
                 Data src = (Data) inst.opd[1];
-                Data.vchg(dataReg.read(dst), src);
+                Data.vchg((Data) dataReg.read(dst), src);
             }
             break;
             case LOAD_RR: {
@@ -53,7 +53,7 @@ public class SimpleVM  {
             break;
             case COPY_RR: {
                 Reg dst = (Reg) inst.opd[0];
-                Data src = dataReg.read((Reg) inst.opd[1]);
+                Data src = (Data) dataReg.read((Reg) inst.opd[1]);
                 dataReg.write(dst, Data.copy(src));
             }
             break;
@@ -140,7 +140,7 @@ public class SimpleVM  {
             case RET_R: {
                 Reg dst = new Reg(true, 0);
                 Reg src = (Reg) inst.opd[0];
-                dataReg.write(dst, Data.copy(dataReg.read(src)));
+                dataReg.write(dst, Data.copy((Data) dataReg.read(src)));
                 if (!callStk.pop())
                     return false;
                 procReg = callStk.topPR();

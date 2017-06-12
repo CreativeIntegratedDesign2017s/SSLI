@@ -1,6 +1,6 @@
 package SVM;
 
-enum DataType { Bool, Int, Str, Arr }
+enum DataType { Bool, Int, Str }
 
 class Data {
     DataType type;
@@ -80,16 +80,4 @@ class Str extends Data {
     static Str concat(Str x, Str y) { return new Str(x.v + y.v); }
     static Str substr(Str x, Int beg, Int end) { return new Str(x.v.substring(beg.v, end.v)); }
     @Override public String toString() { return "$\"" + v + "\""; }
-}
-
-class Arr extends Data {
-    Data[] v;
-    Arr(Data[] arr) { type = DataType.Arr; v = arr; }
-    @Override public String toString() {
-        StringBuilder str = new StringBuilder("{");
-        for (Data item : v)
-            str.append(" ").append(item.toString());
-        str.append(" }");
-        return str.toString();
-    }
 }

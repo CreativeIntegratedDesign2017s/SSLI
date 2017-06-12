@@ -1,10 +1,10 @@
 package SVM;
 
 class DataReg {
-    Data[] data = new Data[256];
+    Object[] data = new Object[256];
     int base;
 
-    Data read(Reg src) {
+    Object read(Reg src) {
         int idx = (src.local) ? (base + src.v) : src.v;
         if (idx >= data.length)
             throw new SimpleException(ErrorCode.OutRegRange);
@@ -12,7 +12,7 @@ class DataReg {
             return data[idx];
     }
 
-    void write(Reg dst, Data val) {
+    void write(Reg dst, Object val) {
         int idx = (dst.local) ? (base + dst.v) : dst.v;
         if (idx >= data.length)
             throw new SimpleException(ErrorCode.OutRegRange);
@@ -20,12 +20,12 @@ class DataReg {
             data[idx] = val;
     }
 
-    static private Data talloc(int[] size, int idx) {
+    static private Object talloc(int[] size, int idx) {
         if (size.length == idx) return new Int(0);
-        Data[] arr = new Data[size[idx]];
+        Object[] arr = new Object[size[idx]];
         for (int i = 0; i < arr.length; i++)
             arr[i] = talloc(size, idx + 1);
-        return new Arr(arr);
+        return arr;
     }
 
     void loadTable(Reg dst, Reg src, int dim) {
@@ -44,9 +44,9 @@ class DataReg {
     }
 
     void readTable(Reg dst, Reg src, int idx) {
-        Arr arr = (Arr)read(src);
-        if (idx >= arr.v.length)
+        Object[] arr = (Object[]) read(src);
+        if (idx >= arr.length)
             throw new SimpleException(ErrorCode.OutArrRange);
-        write(dst, arr.v[idx]);
+        write(dst, arr[idx]);
     }
 }

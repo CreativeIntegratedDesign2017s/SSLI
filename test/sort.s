@@ -21,3 +21,14 @@ proc sort(int[] a, int len) {
         i = i + 1;
     } end
 }
+
+proc print(int[] a, int len) {
+    int i = 0;
+    print("{ ");
+    while (i < len) do
+        print(a[i]);
+        print(" ");
+        i = i + 1;
+    end
+    print("}");
+}

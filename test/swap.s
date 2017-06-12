@@ -7,14 +7,16 @@ proc swap(int& a, int &b) {
 int a = 1;
 int b = 2;
 
-print("before:");
+print("(");
 print(a);
-print(",");
+print(", ");
 print(b);
+print(") -> ");
 
 swap(a, b);
 
-print("    after:");
+print("(");
 print(a);
-print(",");
+print(", ");
 print(b);
+print(")\n");
