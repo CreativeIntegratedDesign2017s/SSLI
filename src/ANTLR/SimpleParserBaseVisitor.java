@@ -1,4 +1,5 @@
-package ANTLR;// Generated from C:/Users/philg/SSLI/src\SimpleParser.g4 by ANTLR 4.6
+// Generated from C:/Users/philg/SSLI/src\SimpleParser.g4 by ANTLR 4.6
+package ANTLR;
 import org.antlr.v4.runtime.tree.AbstractParseTreeVisitor;
 
 /**

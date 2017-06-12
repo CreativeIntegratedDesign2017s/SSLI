@@ -1,9 +1,13 @@
-package ANTLR;// Generated from C:/Users/philg/SSLI/src\SimpleParser.g4 by ANTLR 4.6
+// Generated from C:/Users/philg/SSLI/src\SimpleParser.g4 by ANTLR 4.6
+package ANTLR;
 import org.antlr.v4.runtime.atn.*;
 import org.antlr.v4.runtime.dfa.DFA;
 import org.antlr.v4.runtime.*;
+import org.antlr.v4.runtime.misc.*;
 import org.antlr.v4.runtime.tree.*;
 import java.util.List;
+import java.util.Iterator;
+import java.util.ArrayList;
 
 @SuppressWarnings({"all", "warnings", "unchecked", "unused", "cast"})
 public class SimpleParser extends Parser {
@@ -15,9 +19,9 @@ public class SimpleParser extends Parser {
 	public static final int
 		SLC=1, LRB=2, RRB=3, LCB=4, RCB=5, LSB=6, RSB=7, CM=8, CL=9, SC=10, ASN=11, 
 		ADD=12, SUB=13, MUL=14, DIV=15, POW=16, LT=17, GT=18, EQ=19, NEQ=20, LE=21, 
-		GE=22, NOT=23, AND=24, OR=25, AMP=26, IF=27, THEN=28, ELSE=29, DO=30, 
-		WHILE=31, END=32, RETURN=33, IMPORT=34, VOID=35, BOOL=36, INT=37, STR=38, 
-		ID=39, WS=40;
+		GE=22, NOT=23, AND=24, OR=25, AMP=26, PROC=27, IF=28, THEN=29, ELSE=30, 
+		DO=31, WHILE=32, END=33, RETURN=34, IMPORT=35, VOID=36, BOOL=37, INT=38, 
+		STR=39, ID=40, WS=41;
 	public static final int
 		RULE_prgm = 0, RULE_unit = 1, RULE_block = 2, RULE_stmt_list = 3, RULE_stmt = 4, 
 		RULE_expr = 5, RULE_type = 6, RULE_init = 7, RULE_para_list = 8, RULE_argu_list = 9, 
@@ -30,13 +34,13 @@ public class SimpleParser extends Parser {
 	private static final String[] _LITERAL_NAMES = {
 		null, null, "'('", "')'", "'{'", "'}'", "'['", "']'", "','", "':'", "';'", 
 		"'='", "'+'", "'-'", "'*'", "'/'", "'^'", "'<'", "'>'", "'=='", "'!='", 
-		"'<='", "'>='", "'!'", "'&&'", "'||'", "'&'", "'if'", "'then'", "'else'", 
-		"'do'", "'while'", "'end'", "'return'", "'import'", "'void'"
+		"'<='", "'>='", "'!'", "'&&'", "'||'", "'&'", "'proc'", "'if'", "'then'", 
+		"'else'", "'do'", "'while'", "'end'", "'return'", "'import'", "'void'"
 	};
 	private static final String[] _SYMBOLIC_NAMES = {
 		null, "SLC", "LRB", "RRB", "LCB", "RCB", "LSB", "RSB", "CM", "CL", "SC", 
 		"ASN", "ADD", "SUB", "MUL", "DIV", "POW", "LT", "GT", "EQ", "NEQ", "LE", 
-		"GE", "NOT", "AND", "OR", "AMP", "IF", "THEN", "ELSE", "DO", "WHILE", 
+		"GE", "NOT", "AND", "OR", "AMP", "PROC", "IF", "THEN", "ELSE", "DO", "WHILE", 
 		"END", "RETURN", "IMPORT", "VOID", "BOOL", "INT", "STR", "ID", "WS"
 	};
 	public static final Vocabulary VOCABULARY = new VocabularyImpl(_LITERAL_NAMES, _SYMBOLIC_NAMES);
@@ -124,7 +128,7 @@ public class SimpleParser extends Parser {
 			setState(27);
 			_errHandler.sync(this);
 			_la = _input.LA(1);
-			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LRB) | (1L << LCB) | (1L << SC) | (1L << ADD) | (1L << SUB) | (1L << NOT) | (1L << IF) | (1L << DO) | (1L << WHILE) | (1L << RETURN) | (1L << IMPORT) | (1L << VOID) | (1L << BOOL) | (1L << INT) | (1L << STR) | (1L << ID))) != 0)) {
+			while ((((_la) & ~0x3f) == 0 && ((1L << _la) & ((1L << LRB) | (1L << LCB) | (1L << SC) | (1L << ADD) | (1L << SUB) | (1L << NOT) | (1L << PROC) | (1L << IF) | (1L << DO) | (1L << WHILE) | (1L << RETURN) | (1L << IMPORT) | (1L << BOOL) | (1L << INT) | (1L << STR) | (1L << ID))) != 0)) {
 				{
 				{
 				setState(24);
@@ -197,9 +201,7 @@ public class SimpleParser extends Parser {
 		}
 	}
 	public static class ProcedureContext extends UnitContext {
-		public RtypeContext rtype() {
-			return getRuleContext(RtypeContext.class,0);
-		}
+		public TerminalNode PROC() { return getToken(SimpleParser.PROC, 0); }
 		public TerminalNode ID() { return getToken(SimpleParser.ID, 0); }
 		public Para_listContext para_list() {
 			return getRuleContext(Para_listContext.class,0);
@@ -229,8 +231,21 @@ public class SimpleParser extends Parser {
 		try {
 			setState(41);
 			_errHandler.sync(this);
-			switch ( getInterpreter().adaptivePredict(_input,1,_ctx) ) {
-			case 1:
+			switch (_input.LA(1)) {
+			case LRB:
+			case LCB:
+			case SC:
+			case ADD:
+			case SUB:
+			case NOT:
+			case IF:
+			case DO:
+			case WHILE:
+			case RETURN:
+			case BOOL:
+			case INT:
+			case STR:
+			case ID:
 				_localctx = new StatementContext(_localctx);
 				enterOuterAlt(_localctx, 1);
 				{
@@ -238,12 +253,12 @@ public class SimpleParser extends Parser {
 				stmt();
 				}
 				break;
-			case 2:
+			case PROC:
 				_localctx = new ProcedureContext(_localctx);
 				enterOuterAlt(_localctx, 2);
 				{
 				setState(31);
-				rtype();
+				match(PROC);
 				setState(32);
 				match(ID);
 				setState(33);
@@ -256,7 +271,7 @@ public class SimpleParser extends Parser {
 				block();
 				}
 				break;
-			case 3:
+			case IMPORT:
 				_localctx = new ImportContext(_localctx);
 				enterOuterAlt(_localctx, 3);
 				{
@@ -268,6 +283,8 @@ public class SimpleParser extends Parser {
 				match(SC);
 				}
 				break;
+			default:
+				throw new NoViableAltException(this);
 			}
 		}
 		catch (RecognitionException re) {
@@ -1867,7 +1884,7 @@ public class SimpleParser extends Parser {
 	}
 
 	public static final String _serializedATN =
-		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3*\u00d3\4\2\t\2\4"+
+		"\3\u0430\ud6d1\u8206\uad2d\u4417\uaef1\u8d80\uaadd\3+\u00d3\4\2\t\2\4"+
 		"\3\t\3\4\4\t\4\4\5\t\5\4\6\t\6\4\7\t\7\4\b\t\b\4\t\t\t\4\n\t\n\4\13\t"+
 		"\13\4\f\t\f\4\r\t\r\3\2\7\2\34\n\2\f\2\16\2\37\13\2\3\3\3\3\3\3\3\3\3"+
 		"\3\3\3\3\3\3\3\3\3\3\3\3\3\5\3,\n\3\3\4\3\4\3\4\3\4\3\5\7\5\63\n\5\f\5"+
@@ -1883,24 +1900,24 @@ public class SimpleParser extends Parser {
 		"\7\13\u00be\n\13\f\13\16\13\u00c1\13\13\5\13\u00c3\n\13\3\f\3\f\3\r\3"+
 		"\r\3\r\3\r\3\r\3\r\6\r\u00cd\n\r\r\r\16\r\u00ce\5\r\u00d1\n\r\3\r\2\3"+
 		"\f\16\2\4\6\b\n\f\16\20\22\24\26\30\2\6\3\2\16\17\3\2\20\21\3\2\23\30"+
-		"\4\2%%))\u00ee\2\35\3\2\2\2\4+\3\2\2\2\6-\3\2\2\2\b\64\3\2\2\2\na\3\2"+
+		"\4\2&&**\u00ee\2\35\3\2\2\2\4+\3\2\2\2\6-\3\2\2\2\b\64\3\2\2\2\na\3\2"+
 		"\2\2\fu\3\2\2\2\16\u009a\3\2\2\2\20\u00a5\3\2\2\2\22\u00b5\3\2\2\2\24"+
 		"\u00c2\3\2\2\2\26\u00c4\3\2\2\2\30\u00d0\3\2\2\2\32\34\5\4\3\2\33\32\3"+
 		"\2\2\2\34\37\3\2\2\2\35\33\3\2\2\2\35\36\3\2\2\2\36\3\3\2\2\2\37\35\3"+
-		"\2\2\2 ,\5\n\6\2!\"\5\26\f\2\"#\7)\2\2#$\7\4\2\2$%\5\22\n\2%&\7\5\2\2"+
-		"&\'\5\6\4\2\',\3\2\2\2()\7$\2\2)*\7(\2\2*,\7\f\2\2+ \3\2\2\2+!\3\2\2\2"+
+		"\2\2\2 ,\5\n\6\2!\"\7\35\2\2\"#\7*\2\2#$\7\4\2\2$%\5\22\n\2%&\7\5\2\2"+
+		"&\'\5\6\4\2\',\3\2\2\2()\7%\2\2)*\7)\2\2*,\7\f\2\2+ \3\2\2\2+!\3\2\2\2"+
 		"+(\3\2\2\2,\5\3\2\2\2-.\7\6\2\2./\5\b\5\2/\60\7\7\2\2\60\7\3\2\2\2\61"+
 		"\63\5\n\6\2\62\61\3\2\2\2\63\66\3\2\2\2\64\62\3\2\2\2\64\65\3\2\2\2\65"+
 		"\t\3\2\2\2\66\64\3\2\2\2\679\5\f\7\28\67\3\2\2\289\3\2\2\29:\3\2\2\2:"+
-		"b\7\f\2\2;<\5\16\b\2<=\7)\2\2=>\5\20\t\2>?\7\f\2\2?b\3\2\2\2@A\5\f\7\2"+
-		"AB\7\r\2\2BC\5\f\7\2CD\7\f\2\2Db\3\2\2\2EF\7\35\2\2FG\5\f\7\2GH\7\36\2"+
-		"\2HK\5\b\5\2IJ\7\37\2\2JL\5\b\5\2KI\3\2\2\2KL\3\2\2\2LM\3\2\2\2MN\7\""+
-		"\2\2Nb\3\2\2\2OP\7 \2\2PQ\5\b\5\2QR\7!\2\2RS\5\f\7\2ST\7\"\2\2Tb\3\2\2"+
-		"\2UV\7!\2\2VW\5\f\7\2WX\7 \2\2XY\5\b\5\2YZ\7\"\2\2Zb\3\2\2\2[]\7#\2\2"+
-		"\\^\5\f\7\2]\\\3\2\2\2]^\3\2\2\2^_\3\2\2\2_b\7\f\2\2`b\5\6\4\2a8\3\2\2"+
-		"\2a;\3\2\2\2a@\3\2\2\2aE\3\2\2\2aO\3\2\2\2aU\3\2\2\2a[\3\2\2\2a`\3\2\2"+
-		"\2b\13\3\2\2\2cd\b\7\1\2dv\7)\2\2ev\7&\2\2fv\7\'\2\2gv\7(\2\2hi\7)\2\2"+
-		"ij\7\4\2\2jk\5\24\13\2kl\7\5\2\2lv\3\2\2\2mn\t\2\2\2nv\5\f\7\13op\7\31"+
+		"b\7\f\2\2;<\5\16\b\2<=\7*\2\2=>\5\20\t\2>?\7\f\2\2?b\3\2\2\2@A\5\f\7\2"+
+		"AB\7\r\2\2BC\5\f\7\2CD\7\f\2\2Db\3\2\2\2EF\7\36\2\2FG\5\f\7\2GH\7\37\2"+
+		"\2HK\5\b\5\2IJ\7 \2\2JL\5\b\5\2KI\3\2\2\2KL\3\2\2\2LM\3\2\2\2MN\7#\2\2"+
+		"Nb\3\2\2\2OP\7!\2\2PQ\5\b\5\2QR\7\"\2\2RS\5\f\7\2ST\7#\2\2Tb\3\2\2\2U"+
+		"V\7\"\2\2VW\5\f\7\2WX\7!\2\2XY\5\b\5\2YZ\7#\2\2Zb\3\2\2\2[]\7$\2\2\\^"+
+		"\5\f\7\2]\\\3\2\2\2]^\3\2\2\2^_\3\2\2\2_b\7\f\2\2`b\5\6\4\2a8\3\2\2\2"+
+		"a;\3\2\2\2a@\3\2\2\2aE\3\2\2\2aO\3\2\2\2aU\3\2\2\2a[\3\2\2\2a`\3\2\2\2"+
+		"b\13\3\2\2\2cd\b\7\1\2dv\7*\2\2ev\7\'\2\2fv\7(\2\2gv\7)\2\2hi\7*\2\2i"+
+		"j\7\4\2\2jk\5\24\13\2kl\7\5\2\2lv\3\2\2\2mn\t\2\2\2nv\5\f\7\13op\7\31"+
 		"\2\2pv\5\f\7\6qr\7\4\2\2rs\5\f\7\2st\7\5\2\2tv\3\2\2\2uc\3\2\2\2ue\3\2"+
 		"\2\2uf\3\2\2\2ug\3\2\2\2uh\3\2\2\2um\3\2\2\2uo\3\2\2\2uq\3\2\2\2v\u0097"+
 		"\3\2\2\2wx\f\n\2\2xy\7\22\2\2y\u0096\5\f\7\nz{\f\t\2\2{|\t\3\2\2|\u0096"+
@@ -1914,22 +1931,22 @@ public class SimpleParser extends Parser {
 		"\2\2\2\u0095}\3\2\2\2\u0095\u0080\3\2\2\2\u0095\u0083\3\2\2\2\u0095\u0086"+
 		"\3\2\2\2\u0095\u0089\3\2\2\2\u0095\u008e\3\2\2\2\u0096\u0099\3\2\2\2\u0097"+
 		"\u0095\3\2\2\2\u0097\u0098\3\2\2\2\u0098\r\3\2\2\2\u0099\u0097\3\2\2\2"+
-		"\u009a\u00a0\7)\2\2\u009b\u009c\7\b\2\2\u009c\u009d\7\'\2\2\u009d\u009f"+
+		"\u009a\u00a0\7*\2\2\u009b\u009c\7\b\2\2\u009c\u009d\7(\2\2\u009d\u009f"+
 		"\7\t\2\2\u009e\u009b\3\2\2\2\u009f\u00a2\3\2\2\2\u00a0\u009e\3\2\2\2\u00a0"+
 		"\u00a1\3\2\2\2\u00a1\17\3\2\2\2\u00a2\u00a0\3\2\2\2\u00a3\u00a4\7\r\2"+
 		"\2\u00a4\u00a6\5\f\7\2\u00a5\u00a3\3\2\2\2\u00a5\u00a6\3\2\2\2\u00a6\21"+
-		"\3\2\2\2\u00a7\u00a9\7%\2\2\u00a8\u00a7\3\2\2\2\u00a8\u00a9\3\2\2\2\u00a9"+
-		"\u00b6\3\2\2\2\u00aa\u00ab\5\30\r\2\u00ab\u00b2\7)\2\2\u00ac\u00ad\7\n"+
-		"\2\2\u00ad\u00ae\5\30\r\2\u00ae\u00af\7)\2\2\u00af\u00b1\3\2\2\2\u00b0"+
+		"\3\2\2\2\u00a7\u00a9\7&\2\2\u00a8\u00a7\3\2\2\2\u00a8\u00a9\3\2\2\2\u00a9"+
+		"\u00b6\3\2\2\2\u00aa\u00ab\5\30\r\2\u00ab\u00b2\7*\2\2\u00ac\u00ad\7\n"+
+		"\2\2\u00ad\u00ae\5\30\r\2\u00ae\u00af\7*\2\2\u00af\u00b1\3\2\2\2\u00b0"+
 		"\u00ac\3\2\2\2\u00b1\u00b4\3\2\2\2\u00b2\u00b0\3\2\2\2\u00b2\u00b3\3\2"+
 		"\2\2\u00b3\u00b6\3\2\2\2\u00b4\u00b2\3\2\2\2\u00b5\u00a8\3\2\2\2\u00b5"+
-		"\u00aa\3\2\2\2\u00b6\23\3\2\2\2\u00b7\u00b9\7%\2\2\u00b8\u00b7\3\2\2\2"+
+		"\u00aa\3\2\2\2\u00b6\23\3\2\2\2\u00b7\u00b9\7&\2\2\u00b8\u00b7\3\2\2\2"+
 		"\u00b8\u00b9\3\2\2\2\u00b9\u00c3\3\2\2\2\u00ba\u00bf\5\f\7\2\u00bb\u00bc"+
 		"\7\n\2\2\u00bc\u00be\5\f\7\2\u00bd\u00bb\3\2\2\2\u00be\u00c1\3\2\2\2\u00bf"+
 		"\u00bd\3\2\2\2\u00bf\u00c0\3\2\2\2\u00c0\u00c3\3\2\2\2\u00c1\u00bf\3\2"+
 		"\2\2\u00c2\u00b8\3\2\2\2\u00c2\u00ba\3\2\2\2\u00c3\25\3\2\2\2\u00c4\u00c5"+
-		"\t\5\2\2\u00c5\27\3\2\2\2\u00c6\u00d1\7)\2\2\u00c7\u00c8\7)\2\2\u00c8"+
-		"\u00d1\7\34\2\2\u00c9\u00cc\7)\2\2\u00ca\u00cb\7\b\2\2\u00cb\u00cd\7\t"+
+		"\t\5\2\2\u00c5\27\3\2\2\2\u00c6\u00d1\7*\2\2\u00c7\u00c8\7*\2\2\u00c8"+
+		"\u00d1\7\34\2\2\u00c9\u00cc\7*\2\2\u00ca\u00cb\7\b\2\2\u00cb\u00cd\7\t"+
 		"\2\2\u00cc\u00ca\3\2\2\2\u00cd\u00ce\3\2\2\2\u00ce\u00cc\3\2\2\2\u00ce"+
 		"\u00cf\3\2\2\2\u00cf\u00d1\3\2\2\2\u00d0\u00c6\3\2\2\2\u00d0\u00c7\3\2"+
 		"\2\2\u00d0\u00c9\3\2\2\2\u00d1\31\3\2\2\2\26\35+\648K]au\u0095\u0097\u00a0"+

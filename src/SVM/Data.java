@@ -9,12 +9,15 @@ class Data {
         char c = str.charAt(1);
         if (Character.isDigit(c) || c == '-')
             return new Int(Integer.parseInt(str.substring(1)));
-        if (c == '"' && str.charAt(str.length() - 1) == '"')
-            return new Str(str.substring(2, str.length() - 1));
         if (str.equals("$true"))
             return new Bool(true);
         if (str.equals("$false"))
             return new Bool(false);
+        if (c == '"' && str.charAt(str.length() - 1) == '"') {
+            String v = str.substring(2, str.length() - 1);
+            v = v.replaceAll("\\\\n", "\\\n").replaceAll("\\\\t", "\\\t").replaceAll("\\\\r", "\\\r");
+            return new Str(v);
+        }
         throw new IllegalArgumentException();
     }
 
