@@ -2,14 +2,22 @@ package AST;
 
 import ANTLR.*;
 import ANTLR.SimpleParser.*;
+import org.antlr.v4.runtime.ANTLRInputStream;
+import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.tree.*;
+import java.io.*;
 
 public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
 
     public ASTNode visitPrgm(PrgmContext ctx) {
         ASTPrgm prgm = new ASTPrgm(ctx);
-        for (UnitContext unit: ctx.unit())
-            prgm.units.add((ASTUnit)visit(unit));
+        for (UnitContext unit: ctx.unit()) {
+            ASTNode node = visit(unit);
+            if (unit.getChild(0).getText().equals("import"))
+                    prgm.units.addAll(((ASTPrgm) node).units);
+            else
+                prgm.units.add((ASTUnit) node);
+        }
         return prgm;
     }
 
@@ -37,6 +45,32 @@ public class ASTBuilder extends SimpleParserBaseVisitor<ASTNode> {
         unit.stmtList = (ASTStmtList)visit(ctx.block().stmt_list());
 
         return unit;
+    }
+    public ASTNode visitImport(ImportContext ctx) {
+        String filename = ctx.STR().getSymbol().getText();
+        filename = filename.substring(1, filename.length() - 1);
+        try {
+            BufferedReader br = new BufferedReader(new FileReader(filename));
+            StringBuilder sb = new StringBuilder();
+            String line = br.readLine();
+            while (line != null) {
+                sb.append("\n").append(line);
+                line = br.readLine();
+            }
+            SimpleLexer lexer = new SimpleLexer(new ANTLRInputStream(sb.toString()));
+            SimpleParser parser = new SimpleParser(new CommonTokenStream(lexer));
+            parser.removeErrorListeners();
+            parser.addErrorListener(new ErrorListener());
+            ParseTree tree = parser.prgm();
+            return this.visit(tree);
+        }
+        catch (Exception e) {
+            System.err.printf("Line %d: Error on import %s\n",
+                    ctx.IMPORT().getSymbol().getLine(), filename);
+            System.err.printf(e.getMessage());
+            System.exit(-1);
+            return null;
+        }
     }
 
     public ASTNode visitStmt_list(Stmt_listContext ctx) {
