@@ -49,50 +49,65 @@ public class SimpleInterpreter {
 
     static class CodeReader extends BufferedReader {
         private boolean interactive;
-        String readBuffer;
-        String lastLine;
 
         CodeReader(InputStream is) {
             super(new InputStreamReader(is));
             interactive = (is == System.in);
-            readBuffer = "";
-            lastLine = "";
+        }
+
+        private String readEntireFile() throws IOException {
+            StringBuilder codeBuilder = new StringBuilder();
+            char data[] = new char[65536];
+            do {
+                int readSize = read(data);
+                codeBuilder.append(data, 0, readSize);
+                if (readSize < data.length)
+                    break;
+            } while(true);
+            return codeBuilder.toString();
+        }
+
+        private int cntParen(String code) {
+            int cnt = 0;
+            SimpleLexer lexer = new SimpleLexer(new ANTLRInputStream(code));
+            for (Token token : lexer.getAllTokens()) {
+                switch (token.getType()) {
+                    case SimpleLexer.LRB:
+                    case SimpleLexer.LSB:
+                    case SimpleLexer.LCB:
+                    case SimpleLexer.IF:
+                    case SimpleLexer.PROC:
+                        cnt += 2;
+                        break;
+                    case SimpleLexer.DO:
+                    case SimpleLexer.WHILE:
+                        cnt += 1;
+                        break;
+                    case SimpleLexer.RRB:
+                    case SimpleLexer.RSB:
+                    case SimpleLexer.RCB:
+                    case SimpleLexer.END:
+                        cnt -= 2;
+                        break;
+                }
+            }
+            return cnt;
         }
 
         String readCode() throws IOException {
-            if (!interactive) {
-                StringBuilder codeBuilder = new StringBuilder();
-                char data[] = new char[65536];
-                do {
-                    int readSize = read(data);
-                    codeBuilder.append(data, 0, readSize);
-                    if (readSize < data.length)
-                        break;
-                } while(true);
-                readBuffer = codeBuilder.toString();
-            } else {
-                if (readBuffer.length() == 0)
-                    System.out.print(">>> ");
-                else
-                    System.out.print("... ");
-                String newCode = readLine();
-                if (newCode == null)
-                    return readBuffer;
-                lastLine = newCode;
-                readBuffer += lastLine + "\n";
+            if (!interactive)
+                return readEntireFile();
+
+            System.out.print(">>> ");
+            StringBuilder code = new StringBuilder(readLine());
+            int matcher = cntParen(code.toString());
+            while (matcher > 0) {
+                System.out.print("... ");
+                String line = readLine();
+                code.append("\n").append(line);
+                matcher += cntParen(line);
             }
-            return readBuffer;
-        }
-
-        void flushBuffer() {
-            readBuffer = "";
-        }
-
-        @Override
-        public boolean ready() throws IOException {
-            if (interactive) { return lastLine.length() > 0; }
-            else
-                return super.ready();
+            return code.toString();
         }
     }
 
@@ -136,9 +151,7 @@ public class SimpleInterpreter {
             try {
                 tree = parser.prgm();
             } catch (RuntimeException e) {
-                if (reader.ready()) continue;
                 System.err.println(e.getMessage());
-                reader.flushBuffer();
                 if (config.inOpt) break;
                 else continue;
             }
@@ -154,13 +167,11 @@ public class SimpleInterpreter {
                 prgm.visit(new ScopeChecker(symTable));
                 prgm.visit(new TypeChecker(symTable));
                 symTable.commit();
-                reader.flushBuffer();
             } catch (RuleException e) {
                 symTable.clear();
                 System.err.printf("%s ...line %d: %s\n",
                         e.errorData, e.localLine + totalLines,
                         e.getMessage());
-                reader.flushBuffer();
                 if (config.inOpt) break;
                 else continue;
             }
@@ -194,6 +205,6 @@ public class SimpleInterpreter {
                     return;
                 }
             }
-        } while (reader.ready());
+        } while (true);
     }
 }
