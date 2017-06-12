@@ -1,8 +1,8 @@
-proc swap(int& a, int &b) {
+proc swap(int& a, int &b)
     int t = a;
     a = b;
     b = t;
-}
+end
 
 int a = 1;
 int b = 2;

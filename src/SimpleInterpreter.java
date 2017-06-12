@@ -205,6 +205,6 @@ public class SimpleInterpreter {
                     return;
                 }
             }
-        } while (true);
+        } while (!config.inOpt);
     }
 }
