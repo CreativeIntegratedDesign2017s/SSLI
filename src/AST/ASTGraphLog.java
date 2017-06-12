@@ -4,11 +4,12 @@ import java.io.*;
 import ANTLR.*;
 
 public class ASTGraphLog extends ASTListener<Object> {
+    private String filename;
     private BufferedWriter bw;
     private int numNode;
 
     public ASTGraphLog(String filename) throws IOException {
-        bw = new BufferedWriter(new FileWriter(filename));
+        this.filename = filename;
     }
 
     public Object visitConstant(ASTConstant node)	{
@@ -144,6 +145,7 @@ public class ASTGraphLog extends ASTListener<Object> {
 
     public Object visitPrgm(ASTPrgm prgm)			{
         try {
+            bw = new BufferedWriter(new FileWriter(filename));
             numNode = 0;
             bw.write("graph {\n");
             bw.write("\tgraph [ranksep=0]\n");
