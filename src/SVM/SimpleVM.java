@@ -560,7 +560,12 @@ public class SimpleVM  {
     private static void runThrough() {
         try { while (true) if (!stepInst()) break; }
         catch (SimpleException e) {
-            e.proc = ((Str)dataReg.data[dataReg.base]).v;
+            if (dataReg.base == 0) e.proc = "@main";
+            else if (dataReg.data[dataReg.base] == null) e.proc = "@broken";
+            else if (dataReg.data[dataReg.base].getClass() == Str.class)
+                e.proc = ((Str)dataReg.data[dataReg.base]).v;
+            else e.proc = "@broken";
+
             e.line = instReg;
             throw e;
         }
