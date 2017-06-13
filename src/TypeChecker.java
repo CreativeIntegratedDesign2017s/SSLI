@@ -347,7 +347,7 @@ class TypeChecker extends ASTListener<Expression> {
             throw new RuleException(ctx,String.format("Only string expression can be divided (%s)", ctx.str.getText()));
         }
 
-        if (!fromExpr.isNumeric() || toExpr.isNumeric()) {
+        if (!fromExpr.isNumeric() || !toExpr.isNumeric()) {
             throw new RuleException(ctx,String.format("Indexing expression must be numeric (%s, %s)", ctx.index1.getText(), ctx.index2.getText()));
         }
 
@@ -365,7 +365,7 @@ class TypeChecker extends ASTListener<Expression> {
             case SimpleParser.MUL:
                 return "mult";
             case SimpleParser.POW:
-                return "binary_pow";
+                return "pow";
             case SimpleParser.LT:
                 return "lessthan";
             case SimpleParser.GT:

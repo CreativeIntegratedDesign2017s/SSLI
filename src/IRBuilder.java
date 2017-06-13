@@ -385,12 +385,12 @@ public class IRBuilder extends ASTListener<IRCA> {
         // Substring은 언어단에서 지원하는 기능이지만 IRCode에서 바로 지원하지 않고 시스템 콜 함수를 이용할 계획
         // d = substring(a, b, c)와 같이 생각하자
         IRCA funcChunk = new IRCA(new IRChunk(
-                new IRStatement("LOAD", incIndex(1), new Constant("\"substring@str\""))));
+                new IRStatement("LOAD", incIndex(1), new Constant("\"substr@str@int@int\""))));
         StackIndex prevTop = top;
         IRCA containerChunk = visitWithIncIndex(ctx.str, false);
         IRCA fromChunk = visitWithIncIndex(ctx.index1, false);
         IRCA toChunk = visitWithIncIndex(ctx.index2, false);
-        IRCA callChunk = new IRCA(new IRChunk(new IRStatement("CALL", prevTop, new Constant(3))));
+        IRCA callChunk = new IRCA(new IRChunk(new IRStatement("CALL", prevTop, new Constant(3))), prevTop);
         top = prevTop;
         return aggregateResult(funcChunk, containerChunk, fromChunk, toChunk, callChunk);
     }
