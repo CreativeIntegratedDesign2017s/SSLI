@@ -25,7 +25,7 @@ public class SimpleInterpreter {
         boolean outOpt;
         boolean execOpt;
         String inFile;
-        String outFile;
+        String outFile, outFile_opt;
         String execFile;
 
         ModeConfig(String args[]) {
@@ -42,6 +42,7 @@ public class SimpleInterpreter {
                 inFile = cmd.getOptionValue("f");
                 outOpt = cmd.hasOption("o");
                 outFile = (inOpt && outOpt) ? cmd.getOptionValue("o") : "IRCode.log";
+                outFile_opt = (inOpt && outOpt) ? cmd.getOptionValue("o") + "_opt" : "IRCode_opt.log";
             }
             catch (ParseException e) {
                 System.err.println(e.getMessage());
@@ -142,43 +143,23 @@ public class SimpleInterpreter {
                 return;
             }
 
-                try {
-                    SimpleVM.loadInst(irCodes);
-                } catch (SimpleException e) {
-                    System.err.printf("Proc %s, Line %d, Code: %s\n",
-                            (e.proc == null) ? "" : e.proc,
-                            e.line,
-                            e.code);
-                    System.err.println(e.getMessage());
-                    return;
-                }
-            }
-
             statements = optimizer.doOptimizeGlobal(statements);
 
             irCodes = Arrays.stream(statements)
                     .map(IRStatement::toString)
                     .toArray(String[]::new);
-            if (config.inOpt && config.outOpt) {
-                OutputStream fs = new FileOutputStream(config.outFile);
-                fs.write(String.join("\n", irCodes).getBytes());
-                fs.close();
-            }
-            else {
-                BufferedWriter bw = new BufferedWriter(new FileWriter("IRCode_opt.log", true));
-                bw.write(String.join("\n", irCodes) + "\n");
-                bw.close();
 
-                try {
-                    SimpleVM.loadInst(irCodes);
-                } catch (SimpleException e) {
-                    System.err.printf("Proc %s, Line %d, Code: %s\n",
-                            (e.proc == null) ? "" : e.proc,
-                            e.line,
-                            e.code);
-                    System.err.println(e.getMessage());
-                    return;
-                }
+            fs = new FileOutputStream(config.outFile_opt);
+            fs.write(String.join("\n", irCodes).getBytes());
+            fs.close();
+
+            // Execution on VM
+            try { SimpleVM.loadInst(irCodes); }
+            catch (SimpleException e) {
+                System.out.printf("VM Error on Proc %s, Line %d, Code: %s\n",
+                        (e.proc == null) ? "" : e.proc, e.line, e.code);
+                System.out.println(e.getMessage());
+                return;
             }
 
             totalLines += code.split("\n").length - 1;
