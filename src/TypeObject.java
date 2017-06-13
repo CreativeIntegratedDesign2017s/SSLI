@@ -20,10 +20,11 @@ abstract class ValueType extends TypeObject {
 }
 
 abstract class SingleType extends ValueType {
-    String name;
+    String name, defVal;
 
-    SingleType(String typeName) {
+    SingleType(String typeName, String defaultValue) {
         name = typeName;
+        defVal = defaultValue;
     }
 
     @Override
@@ -36,21 +37,25 @@ abstract class SingleType extends ValueType {
     public boolean equals(Object o) {
         return super.equals(o) && name.equals(((SingleType) o).name);
     }
+
+    public String getDefaultValue() {
+        return defVal;
+    }
 }
 
 class Primitive extends SingleType {
-    Primitive(String name) {
-        super(name);
+    Primitive(String name, String defaultValue) {
+        super(name, defaultValue);
     }
 }
 
 class Alias extends SingleType {
-    private TypeObject base;
+    private SingleType base;
     @Override
     public String getTypeName() { return name; }
 
-    Alias(String typeName, TypeObject b) {
-        super(typeName);
+    Alias(String typeName, SingleType b) {
+        super(typeName, b.getDefaultValue());
         base = b;
     }
     public String toString() {

@@ -151,9 +151,9 @@ class SymbolTable {
         scopeStack.push(gs);
 
         declareSingleType("void", new VoidType());
-        declarePrimitive("str");
-        declarePrimitive("int");
-        declarePrimitive("bool");
+        declarePrimitive("str", "\"\"");
+        declarePrimitive("int", "0");
+        declarePrimitive("bool", "false");
         declareFunction("print", new ValueExpr("void"),
                 new ArrayList<ParameterExpr>() {{
                     add(new ParameterExpr("int", 0, false));
@@ -278,12 +278,12 @@ class SymbolTable {
         singleTypes.put(name, single);
     }
 
-    private void declarePrimitive(String name) {
-        declareSingleType(name, new Primitive(name));
+    private void declarePrimitive(String name, String defVal) {
+        declareSingleType(name, new Primitive(name, defVal));
     }
 
     void declareAlias(String name, String target) {
-        TypeObject base = getSingleType(target);
+        SingleType base = getSingleType(target);
         if (base == null)
             throw new RuntimeException(String.format(
                     "No target type object named by %s is declared for alias %s", target, name
