@@ -1,13 +1,12 @@
 import java.util.*;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 
 public class DataFlowAnalysis {
-    class ReachingDefinition {
+    static class ReachingDefinition {
         Map<IROptimizer.IRNode, Set<IROptimizer.IRNode>> in, out, gen, kill;
         Map<StackIndex, Set<IROptimizer.IRNode>> defs;
 
-        ReachingDefinition(List<IROptimizer.IRNode> source) {
+        ReachingDefinition(Set<IROptimizer.IRNode> lastOut, List<IROptimizer.IRNode> source) {
             in = new HashMap<>();
             out = new HashMap<>();
             defs = new HashMap<>();
@@ -61,10 +60,15 @@ public class DataFlowAnalysis {
                 changed = false;
 
                 for(IROptimizer.IRNode node : source) {
-                    Set<IROptimizer.IRNode> inset = in.get(node);
+                    Set<IROptimizer.IRNode> inset = new HashSet<>();
+                    if (node.predecessors.size() == 0)  // header node
+                        inset.addAll(lastOut);
                     for (IROptimizer.IRNode pn : node.predecessors) {
-                        changed = changed || inset.addAll(out.get(pn));
+                        inset.addAll(out.get(pn));
                     }
+                    Set<IROptimizer.IRNode> prevSet = in.put(node, inset);
+                    changed = changed || !prevSet.equals(inset);
+
                     Set<IROptimizer.IRNode> prevOut = out.get(node);
                     Set<IROptimizer.IRNode> nextOut = new HashSet<>(inset);
                     nextOut.removeAll(kill.get(node));
@@ -75,58 +79,58 @@ public class DataFlowAnalysis {
                 }
             } while(changed);
 
+            /*
             System.out.println("ReachingDefinition");
             for (IROptimizer.IRNode node : source) {
                 System.out.println(String.format("%d:\tgen: %s\tkill: %s\tin: %s\tout: %s",
                         node.id, gen.get(node), kill.get(node), in.get(node), out.get(node)));
             }
+            */
         }
     }
 
-    class ReachingExpression {
-        class ExpressionInfo {
-            IRArgument dest;
-            String command;
-            Set<IRArgument> argSet;
+    static class ExpressionInfo {
+        String command;
+        Set<IRArgument> argSet;
 
-            ExpressionInfo(IRArgument dest, String command, IRArgument[] arguments) {
-                this.dest = dest;
-                this.command = command;
-                this.argSet = new HashSet<IRArgument>(){{
-                    addAll(Arrays.asList(arguments));
-                }};
-            }
-
-            boolean test(IRArgument tArg) {
-                for (IRArgument arg : argSet) {
-                    if (arg.equals(tArg))
-                        return false;
-                }
-                return true;
-            }
-
-            @Override
-            public boolean equals(Object o) {
-                if (!(o instanceof ExpressionInfo))
-                    return false;
-                ExpressionInfo ei = (ExpressionInfo) o;
-                return ei.command.equals(command) && argSet.equals(ei.argSet);
-            }
-
-            @Override
-            public int hashCode() {
-                return toString().hashCode();
-            }
-
-            @Override
-            public String toString() {
-                return dest + " = " + command + " " + argSet;
-            }
+        ExpressionInfo(IRStatement stmt) {
+            this.command = stmt.command;
+            this.argSet = new HashSet<IRArgument>(){{
+                addAll(Arrays.asList(Arrays.copyOfRange(stmt.arguments, 1, stmt.arguments.length)));
+            }};
         }
+
+        boolean test(IRArgument tArg) {
+            for (IRArgument arg : argSet) {
+                if (arg.equals(tArg))
+                    return false;
+            }
+            return true;
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (!(o instanceof ExpressionInfo))
+                return false;
+            ExpressionInfo ei = (ExpressionInfo) o;
+            return ei.command.equals(command) && argSet.equals(ei.argSet);
+        }
+
+        @Override
+        public int hashCode() {
+            return toString().hashCode();
+        }
+
+        @Override
+        public String toString() {
+            return command + " " + argSet;
+        }
+    }
+    static class ReachingExpression {
         Map<IROptimizer.IRNode, Set<ExpressionInfo>> gen, in, out;
         Map<IROptimizer.IRNode, IRArgument> kill;
 
-        ReachingExpression(List<IROptimizer.IRNode> source) {
+        ReachingExpression(Set<ExpressionInfo> lastOut, List<IROptimizer.IRNode> source) {
             in = new HashMap<>();
             out = new HashMap<>();
             gen = new HashMap<>();
@@ -142,8 +146,7 @@ public class DataFlowAnalysis {
                 out.put(node, new HashSet<>());
                 gen.put(node, new HashSet<>());
                 if (defOps.contains(node.stmt.command)) {
-                    ExpressionInfo expr = new ExpressionInfo(node.stmt.arguments[0], node.stmt.command,
-                            Arrays.copyOfRange(node.stmt.arguments, 1, node.stmt.arguments.length));
+                    ExpressionInfo expr = new ExpressionInfo(node.stmt);
                     allExprs.add(expr);
                     Set<ExpressionInfo> genSet = gen.get(node);
                     if (expr.test(node.stmt.arguments[0]))
@@ -164,7 +167,7 @@ public class DataFlowAnalysis {
             do {
                 changed = false;
                 for (IROptimizer.IRNode node : source) {
-                    Set<ExpressionInfo> is = null;
+                    Set<ExpressionInfo> is = lastOut;
                     for (IROptimizer.IRNode pred : node.predecessors) {
                         if (is == null)
                             is = new HashSet<>(out.get(pred));
@@ -189,19 +192,21 @@ public class DataFlowAnalysis {
                 }
             } while(changed);
 
+            /*
             System.out.println("ReachingExpression");
             for (IROptimizer.IRNode node : source) {
                 System.out.println(String.format("%d:\tgen: %s\tkill: %s\tin: %s\tout: %s",
                         node.id, gen.get(node), kill.get(node), in.get(node), out.get(node)));
             }
+            */
         }
     }
 
-    ReachingDefinition AnalizeReachingDefinition(List<IROptimizer.IRNode> nodes) {
-        return new ReachingDefinition(nodes);
+    ReachingDefinition AnalizeReachingDefinition(Set<IROptimizer.IRNode> lastOut, List<IROptimizer.IRNode> nodes) {
+        return new ReachingDefinition(lastOut, nodes);
     }
 
-    ReachingExpression AnalizeReachingExpression(List<IROptimizer.IRNode> nodes) {
-        return new ReachingExpression(nodes);
+    ReachingExpression AnalizeReachingExpression(Set<ExpressionInfo> lastOut, List<IROptimizer.IRNode> nodes) {
+        return new ReachingExpression(lastOut, nodes);
     }
 }

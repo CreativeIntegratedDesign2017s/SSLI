@@ -30,7 +30,7 @@ class StackIndex extends IRArgument {
     }
 
     StackIndex offset(int offset) {
-        return new StackIndex(index + offset, globalStack, true);
+        return new StackIndex(index + offset, globalStack, temporary);
     }
 
     @Override
@@ -147,7 +147,6 @@ public class IRBuilder extends ASTListener<IRCA> {
     StackIndex top;
     Map<SymbolTable.Symbol, StackIndex> symbolIndex = new HashMap<>();
     SymbolTable symTable;
-    StackIndex returnIndex;
 
     IRBuilder(StackIndex globalIndex, SymbolTable symTable) {
         top = globalIndex;
@@ -226,17 +225,7 @@ public class IRBuilder extends ASTListener<IRCA> {
             SymbolTable.Symbol paramSymbol = symTable.getSymbol(ptype);
             symbolIndex.put(paramSymbol, incIndex(1));
         }
-
-        IRStatement retStmt = null;
-        if (fDecl.rType.getTypeName().equals("void")) {
-            returnIndex = null;
-            retStmt = new IRStatement("RET");
-        }
-        else {
-            returnIndex = top.offset(1);  // 인자를 다 할당하고 난 후의 처음 인덱스. 즉 로컬변수의 첫번째 인덱스인데 이녀석을 리턴 인덱스로 이용한다.
-            retStmt = new IRStatement("RET", returnIndex);
-        }
-
+        IRStatement retStmt = new IRStatement("RET");
 
         IRCA blockChunk = ctx.stmtList.visit(this);
         int maxLine = blockChunk.chunk.statements.size();
@@ -275,7 +264,6 @@ public class IRBuilder extends ASTListener<IRCA> {
         SymbolTable.Symbol s = symTable.getSymbol(ctx);
         symbolIndex.put(s, incIndex(1));
         StackIndex target = top;
-        target.temporary = false;
 
         IRCA stackInitializer = null;
         SymbolTable.VarSymbol vs = (SymbolTable.VarSymbol)s;

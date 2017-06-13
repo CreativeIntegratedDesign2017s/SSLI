@@ -18,7 +18,6 @@ public class SimpleInterpreter {
     static private ScopeChecker scpChecker;
     static private TypeChecker typeChecker;
     static private IRBuilder irBuilder;
-    static private StackIndex globalIndex;
     static private IROptimizer optimizer;
 
     static class ModeConfig {
@@ -77,6 +76,10 @@ public class SimpleInterpreter {
             scpChecker = new ScopeChecker(symTable);
             typeChecker = new TypeChecker(symTable);
             irBuilder = new IRBuilder(new StackIndex(0, true), symTable);
+            FileWriter fw = new FileWriter("IRCode.log", false);
+            fw.close();
+            fw = new FileWriter("IRCode_opt.log", false);
+            fw.close();
             InterpretProgramViaStream();
         }
     }
@@ -119,15 +122,8 @@ public class SimpleInterpreter {
 
             // IR Code Generation
             IRCA prgmChunk = irBuilder.visit(prgm);
-<<<<<<< HEAD
-            IROptimizer optimizer = new IROptimizer(prgmChunk.chunk.statements.toArray(new IRStatement[prgmChunk.chunk.statements.size()]));
-            optimizer.doOptimize();
-=======
             IRStatement[] statements = prgmChunk.chunk.statements.toArray(
                     new IRStatement[prgmChunk.chunk.statements.size()]);
-
-            globalIndex = irBuilder.top;
->>>>>>> add constant & copy propagation
 
             String[] irCodes = Arrays.stream(statements)
                     .map(IRStatement::toString)
@@ -158,8 +154,7 @@ public class SimpleInterpreter {
                 }
             }
 
-            optimizer.setSource(statements);
-            statements = optimizer.doOptimize();
+            statements = optimizer.doOptimizeGlobal(statements);
 
             irCodes = Arrays.stream(statements)
                     .map(IRStatement::toString)
@@ -170,8 +165,8 @@ public class SimpleInterpreter {
                 fs.close();
             }
             else {
-                BufferedWriter bw = new BufferedWriter(new FileWriter("IRCode_opt.log"));
-                bw.write(String.join("\n", irCodes));
+                BufferedWriter bw = new BufferedWriter(new FileWriter("IRCode_opt.log", true));
+                bw.write(String.join("\n", irCodes) + "\n");
                 bw.close();
 
                 try {
