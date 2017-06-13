@@ -121,6 +121,8 @@ public class SimpleInterpreter {
                 else continue;
             }
 
+            totalLines += code.split("\n").length - 1;
+
             // IR Code Generation
             IRCA prgmChunk = irBuilder.visit(prgm);
             IRStatement[] statements = prgmChunk.chunk.statements.toArray(
@@ -134,6 +136,7 @@ public class SimpleInterpreter {
             fs.write(String.join("\n", irCodes).getBytes());
             fs.close();
 
+            /*
             // Execution on VM
             try { SimpleVM.loadInst(irCodes); }
             catch (SimpleException e) {
@@ -142,6 +145,7 @@ public class SimpleInterpreter {
                 System.out.println(e.getMessage());
                 return;
             }
+            */
 
             statements = optimizer.doOptimizeGlobal(statements);
 
@@ -153,6 +157,18 @@ public class SimpleInterpreter {
             fs.write(String.join("\n", irCodes).getBytes());
             fs.close();
 
+            // Divide By Zero Pre-detecting
+            boolean success = true;
+            for (IRStatement stmt : statements) {
+                if (stmt.command.equals("DIV") && stmt.arguments[2].equals(new Constant(0))) {
+                    System.err.println("Divide by Zero detected!");
+                    success = false;
+                    break;
+                }
+            }
+            if (!success)
+                continue;
+
             // Execution on VM
             try { SimpleVM.loadInst(irCodes); }
             catch (SimpleException e) {
@@ -161,8 +177,6 @@ public class SimpleInterpreter {
                 System.out.println(e.getMessage());
                 return;
             }
-
-            totalLines += code.split("\n").length - 1;
 
         } while (reader.ready());
     }
