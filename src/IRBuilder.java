@@ -287,7 +287,8 @@ public class IRBuilder extends ASTListener<IRCA> {
                         new IRCA(new IRChunk(new IRStatement("COPY", target, initializeChunk.argument))));
         }
         else if (shape.size() == 0)
-            initializeChunk = new IRCA(new IRChunk(new IRStatement("LOAD", target, new Constant(0))));
+            initializeChunk = new IRCA(new IRChunk(
+                    new IRStatement("LOAD", target, new Constant(vs.type.getDefaultValue()))));
         top = target;
 
         return aggregateResult(stackInitializer, initializeChunk);

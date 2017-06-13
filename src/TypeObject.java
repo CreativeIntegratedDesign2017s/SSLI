@@ -17,6 +17,7 @@ abstract class TypeObject {
 }
 
 abstract class ValueType extends TypeObject {
+    String getDefaultValue() { return ""; }
 }
 
 abstract class SingleType extends ValueType {
@@ -38,6 +39,7 @@ abstract class SingleType extends ValueType {
         return super.equals(o) && name.equals(((SingleType) o).name);
     }
 
+    @Override
     public String getDefaultValue() {
         return defVal;
     }
@@ -156,7 +158,7 @@ class Function extends TypeObject {
 
 class VoidType extends SingleType {
     VoidType() {
-        super("void");
+        super("void", "");
     }
     public boolean writable() { return false; }
 }
