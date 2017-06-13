@@ -14,6 +14,7 @@ public class SimpleInterpreter {
     static private CodeReader reader;
     static private SymbolTable symTable;
     static private ASTBuilder astBuilder;
+    static private ASTOptimizer astOptimizer;
     static private ASTGraphLog astGrapher;
     static private ScopeChecker scpChecker;
     static private TypeChecker typeChecker;
@@ -70,6 +71,7 @@ public class SimpleInterpreter {
             reader = new CodeReader(is);
             symTable = new SymbolTable();
             astBuilder = new ASTBuilder();
+            astOptimizer = new ASTOptimizer();
             astGrapher = new ASTGraphLog("ASTGraph.log");
             scpChecker = new ScopeChecker(symTable);
             typeChecker = new TypeChecker(symTable);
@@ -93,6 +95,7 @@ public class SimpleInterpreter {
             try {
                 ParseTree tree = parser.prgm();
                 prgm = astBuilder.visit(tree);
+                astOptimizer.visit(prgm);
                 astGrapher.visit(prgm);
             } catch (RuntimeException e) {
                 System.out.println(e.getMessage());
