@@ -168,6 +168,11 @@ class SymbolTable {
                 }}, true);
         declareFunction("time", new ValueExpr("int"),
                 new ArrayList<>(), true);
+        declareFunction("concat", new ValueExpr("str"),
+                new ArrayList<ParameterExpr>() {{
+                    add(new ParameterExpr("str", 0, false));
+                    add(new ParameterExpr("str", 0, false));
+                }}, true);
 
         class OperatorInfo {
             String name, rType;
