@@ -77,9 +77,9 @@ public class SimpleInterpreter {
             scpChecker = new ScopeChecker(symTable);
             typeChecker = new TypeChecker(symTable);
             irBuilder = new IRBuilder(new StackIndex(0, true), symTable);
-            FileWriter fw = new FileWriter("IRCode.log", false);
+            FileWriter fw = new FileWriter(config.outFile, false);
             fw.close();
-            fw = new FileWriter("IRCode_opt.log", false);
+            fw = new FileWriter(config.outFile_opt, false);
             fw.close();
             InterpretProgramViaStream();
         }
@@ -132,8 +132,8 @@ public class SimpleInterpreter {
                     .map(IRStatement::toString)
                     .toArray(String[]::new);
 
-            OutputStream fs = new FileOutputStream(config.outFile);
-            fs.write(String.join("\n", irCodes).getBytes());
+            OutputStream fs = new FileOutputStream(config.outFile, true);
+            fs.write((String.join("\n", irCodes) + "\n").getBytes());
             fs.close();
 
             /*
@@ -153,8 +153,8 @@ public class SimpleInterpreter {
                     .map(IRStatement::toString)
                     .toArray(String[]::new);
 
-            fs = new FileOutputStream(config.outFile_opt);
-            fs.write(String.join("\n", irCodes).getBytes());
+            fs = new FileOutputStream(config.outFile_opt, true);
+            fs.write((String.join("\n", irCodes) + "\n").getBytes());
             fs.close();
 
             // Divide By Zero Pre-detecting
@@ -178,6 +178,6 @@ public class SimpleInterpreter {
                 return;
             }
 
-        } while (reader.ready());
+        } while (!config.inOpt);
     }
 }

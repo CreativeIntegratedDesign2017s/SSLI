@@ -278,7 +278,7 @@ public class IROptimizer {
                     Set<IRNode> reachingDefs = rd.in.get(node);
                     IRArgument redirectArg = null;
                     for (IRNode bn : bindingDefs) {
-                        if (reachingDefs.stream().
+                        if (reachingDefs.contains(bn) && reachingDefs.stream().
                                 filter(n -> n != node && n.stmt.arguments[0].equals(bn.stmt.arguments[0]))
                                 .count() == 1) {
                             redirectArg = bn.stmt.arguments[0];
