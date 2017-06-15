@@ -1,14 +1,13 @@
 int startTime = time();
 int i = 0;
-int count = 100000000;
-int x = 999999999;
-int y = 0;
-int z = 0;
+int count = 10000000;
+int z = 99 ^ 99;
+int x = 3 + 9;
 // --- test input starts after here
 while i < count do
-    x = x + z;
+    int x = 99 ^ 99;
+    int y = x + (3 + 9);
     i = i + 1;
 end
-print(x + y);
-print("  time:");
+print("time:");
 print(time() - startTime);
