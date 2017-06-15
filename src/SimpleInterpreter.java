@@ -42,7 +42,7 @@ public class SimpleInterpreter {
                 inFile = cmd.getOptionValue("f");
                 outOpt = cmd.hasOption("o");
                 outFile = (inOpt && outOpt) ? cmd.getOptionValue("o") : "IRCode.log";
-                outFile_opt = (inOpt && outOpt) ? cmd.getOptionValue("o") + "_opt" : "IRCode_opt.log";
+                outFile_opt = (inOpt && outOpt) ? (cmd.getOptionValue("o") + "_opt") : "IRCode_opt.log";
             }
             catch (ParseException e) {
                 System.err.println(e.getMessage());
