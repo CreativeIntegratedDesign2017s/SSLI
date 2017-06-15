@@ -137,13 +137,16 @@ public class SimpleInterpreter {
             fs.close();
 
             /*
-            // Execution on VM
-            try { SimpleVM.loadInst(irCodes); }
-            catch (SimpleException e) {
-                System.out.printf("VM Error on Proc %s, Line %d, Code: %s\n",
-                        (e.proc == null) ? "" : e.proc, e.line, e.code);
-                System.out.println(e.getMessage());
-                return;
+            if (!config.inOpt || !config.outOpt) {
+                // Execution on VM
+                try {
+                    SimpleVM.loadInst(irCodes);
+                } catch (SimpleException e) {
+                    System.out.printf("VM Error on Proc %s, Line %d, Code: %s\n",
+                            (e.proc == null) ? "" : e.proc, e.line, e.code);
+                    System.out.println(e.getMessage());
+                    return;
+                }
             }
             */
 
@@ -170,12 +173,14 @@ public class SimpleInterpreter {
                 continue;
 
             // Execution on VM
-            try { SimpleVM.loadInst(irCodes); }
-            catch (SimpleException e) {
-                System.out.printf("VM Error on Proc %s, Line %d, Code: %s\n",
-                        (e.proc == null) ? "" : e.proc, e.line, e.code);
-                System.out.println(e.getMessage());
-                return;
+            if (!config.inOpt || !config.outOpt) {
+                try { SimpleVM.loadInst(irCodes); }
+                catch (SimpleException e) {
+                    System.out.printf("VM Error on Proc %s, Line %d, Code: %s\n",
+                            (e.proc == null) ? "" : e.proc, e.line, e.code);
+                    System.out.println(e.getMessage());
+                    return;
+                }
             }
 
         } while (!config.inOpt);
