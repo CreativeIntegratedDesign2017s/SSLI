@@ -69,6 +69,11 @@ class Constant extends IRArgument{
         Constant c = (Constant) o;
         return c.value.equals(value);
     }
+
+    @Override
+    public int hashCode() {
+        return value.hashCode();
+    }
 }
 
 class RawArg extends IRArgument {
