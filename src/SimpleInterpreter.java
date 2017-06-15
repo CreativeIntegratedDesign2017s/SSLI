@@ -124,7 +124,7 @@ public class SimpleInterpreter {
             fs.write(String.join("\n", irCodes).getBytes());
             fs.close();
 
-            if (config.inOpt && config.outOpt) {
+            if (!config.inOpt || !config.outOpt) {
                 // Execution on VM
                 try {
                     SimpleVM.loadInst(irCodes);
