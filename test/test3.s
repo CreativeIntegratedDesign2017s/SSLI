@@ -1,8 +1,9 @@
-int x = 3;
-int y = 7;
-int z = x + y;
-// --- test input starts after here
-z = 9;
-int k = x + y + 10;
-x = 6;
-print(k);
+int start = time();
+int i = 0;
+int z = 99 ^ 99;
+while i < 100000000 do
+    int x = 99 ^ 99;
+    int y = 99 ^ 99;
+    i = i + 1;
+end
+print(time() - start);

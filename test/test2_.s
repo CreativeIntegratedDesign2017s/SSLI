@@ -1,9 +1,9 @@
 int start = time();
-int x = 3;
-int z = 6;
 int i = 0;
+int k = 32;
+int z = k - 23;
 while i < 100000000 do
+    int x = k - 23;
     i = i + 1;
-    int y = x + x;
 end
 print(time() - start);
